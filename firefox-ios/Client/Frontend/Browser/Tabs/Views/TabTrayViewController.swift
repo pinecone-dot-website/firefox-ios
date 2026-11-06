@@ -138,6 +138,11 @@ final class TabTrayViewController: UIViewController,
                                            buttonTitles: titles)
         selector.delegate = self
         selector.accessibilityIdentifier = AccessibilityIdentifiers.TabTray.navBarSegmentedControl
+        #if GECKO_ENGINE
+        // Private browsing is hidden in Gecko builds; the experiment order puts it first.
+        selector.buttons.first?.isEnabled = false
+        selector.buttons.first?.alpha = 0.3
+        #endif
 
         didSelectSection(panelType: tabTrayState.selectedPanel)
         return selector
@@ -153,6 +158,11 @@ final class TabTrayViewController: UIViewController,
                                                buttonTitles: titles)
         selector.delegate = self
         selector.accessibilityIdentifier = AccessibilityIdentifiers.TabTray.navBarSegmentedControl
+        #if GECKO_ENGINE
+        // Private browsing is hidden in Gecko builds; the experiment order puts it first.
+        selector.buttons.first?.isEnabled = false
+        selector.buttons.first?.alpha = 0.3
+        #endif
 
         didSelectSection(panelType: tabTrayState.selectedPanel)
         return selector

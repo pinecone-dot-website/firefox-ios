@@ -1,7 +1,7 @@
 # Firefox iOS on Gecko: Plan
 
 **Branch:** `gecko-engine` (fork: `eaglstun/firefox-ios`, upstream: `mozilla-mobile/firefox-ios`)
-**Status:** M0, M1, M2 done. M3 design approved (`M3-DESIGN.md`, decisions at the top); M3 build in progress.
+**Status:** M0–M3 done. Next: M4 (dev-signed build on Eric's iPhone).
 **Evidence log:** `RESULT.md` in this folder. Every milestone ends with proof there.
 
 ## The goal
@@ -102,6 +102,17 @@ Practical facts learned along the way. Keep this current; details and history li
   - Loads sent before the first location event are dropped; `GeckoEngineSession` queues them.
   - The extensions need `@executable_path/../../Frameworks` in their runpath, and version keys
     in their Info.plists.
+- **Fennec on Gecko:** `gecko-port/FennecGecko/build.sh [udid]` builds everything and prints the
+  app path (about 3 min warm). It needs the Gecko objdir built from the local `ios-gecko-engine`
+  branch, which lets Fennec keep its own app delegate. Gecko mode is
+  `GECKO_ENGINE_BUILD=YES`, applied through an optional include at the end of
+  `Client/Configuration/Fennec.xcconfig`; a normal Fennec build ignores it. Glue lives in the
+  synced `firefox-ios/Client/Gecko/` folder (add files there, no pbxproj edits). Gecko builds
+  use their own DerivedData (`FennecGecko/build/Fennec`), so the WebKit build isn't disturbed.
+- **Driving Fennec:** SimDriver's `EngineProofTest` (back button `TabToolbar.backButton`, link at
+  `0.5,0.4975`) and `TabsProofTest`. Fennec skips session restore under `FIREFOX_TEST` unless
+  `FIREFOX_ENABLE_SESSION_RESTORE` is passed, and even then relaunch restore didn't show in the
+  harness on WebKit or Gecko; unresolved.
 - **Proof run:** serve `gecko-port/proof/` on `localhost:8765`, then run SimDriver's
   `EngineProofTest`. Type `localhost:8765/engine.html` without `http://`; with it,
   SampleBrowser's URL formatter turns it into a search.

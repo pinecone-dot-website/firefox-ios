@@ -6,6 +6,18 @@
 3. Dormant `WKWebView` per tab.
 4. xcconfig `#include?` plus build script.
 
+**Built 2026-11-06.** Results are in `RESULT.md` (M3). Where the build differs from this doc:
+- The Gecko patch takes the delegate class from an exported setter
+  (`GeckoSetAppDelegateClassName`), not an Info.plist key, because Fennec picks
+  `AppDelegate` or `UITestAppDelegate` at runtime.
+- Private tabs: the UI entry points are hidden as decided, and as a safety net any private tab
+  that still gets created has no Gecko engine and runs on WebKit, so it stays private.
+- The engine view sits inside the tab's dormant `TabWebView`, so `WebviewViewController` and the
+  coordinator are unchanged.
+- New windows go through `onLoadRequest` (target `.new`), not `onNewSession`: Gecko's iOS
+  `onNewSession` handler asserts the returned session is open and then opens it again.
+- Session restore by URL is wired but not shown working; see `RESULT.md`.
+
 **M3 goal:** Fennec browses on Gecko, with the URL bar, tabs, and back/forward
 working. The proof is the same as M2: Wikipedia loads, `engine.html` shows GECKO,
 a link opens, and Back works. Everything else may be stubbed, as long as the doc

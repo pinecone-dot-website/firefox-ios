@@ -274,3 +274,85 @@ What the survey found:
   xcconfig vs pbxproj plumbing) are listed as decisions in the doc.
 - Five files only show Mozilla pages in their own `WKWebView` and can stay WebKit; four
   import WebKit without using it.
+
+## M3 done (2026-11-06)
+
+**Fennec browses on Gecko** in the iOS 27.2 simulator (iPhone 18 Pro), behind
+`GECKO_ENGINE_BUILD=YES`. Eric's design decisions are at the top of `M3-DESIGN.md`.
+
+**Proof** (SimDriver, real Fennec UI, typing into Fennec's own address bar):
+
+| Step | Result | Screenshot |
+| ---- | ------ | ---------- |
+| Wikipedia article | renders | `m3-fennec-1-site.png` |
+| `engine.html` | **GECKO**, `CSS.supports` `true`, UA `rv:162.0 Gecko/162.0 Firefox/162.0`; Fennec's URL bar shows `localhost`, Back lit | `m3-fennec-2-engine.png` |
+| follow the link | second page | `m3-fennec-3-followed.png` |
+| Back | engine page again, Forward now lit | `m3-fennec-4-back.png` |
+| control: stock WebKit Fennec | **NOT GECKO**, `CSS.supports` `false`, AppleWebKit UA | `m3-webkit-2-engine.png` |
+
+Tabs (`TabsProofTest`): opened a second tab and loaded another page; the tray shows both with
+their page titles ("Engine check", "Second page"); selecting the first tab shows its GECKO page;
+closing the second tab leaves one. Tab thumbnails are blank (screenshots are a stub).
+
+Not shown: **session restore**. After relaunch the tray holds one Homepage tab, but stock WebKit
+Fennec does exactly the same under this harness (also with `FIREFOX_ENABLE_SESSION_RESTORE` and
+backgrounding the app before terminating), so it's a harness problem I didn't solve, not a
+measured Gecko regression. Gecko tabs restore by reloading their saved URL; that path is
+untested.
+
+WebKit mode still builds; 179 unit tests (`TabTests`, `TabManagerTests`,
+`TabManagerRestoreTabsTests`, `TabManagerPreserveTabsTests`, `BrowserViewControllerTests`,
+`TabTrayViewControllerTests`) pass. SwiftLint is clean on every changed file.
+
+**Gecko patch** (local branch `ios-gecko-engine` in `mozilla-firefox`, commit `eb3defcca458`):
+`nsAppShell::Run` passes a delegate class set through `GeckoSetAppDelegateClassName` to
+`UIApplicationMain` (default `AppShellDelegate`); `GeckoAppShellWillTerminate` and
+`GeckoAppShellDidReceiveMemoryWarning` do AppShellDelegate's work for a replacement delegate.
+The three functions are added to `libxul.symbols` (without that they link but aren't exported).
+Console proof: `GeckoView.Startup` and `nsAppShell::Run`, then Fennec's
+`willFinishLaunchingWithOptions`/`didFinishLaunchingWithOptions`.
+
+**How it's built:**
+- `gecko-port/FennecGecko/`: xcodegen project for GeckoView (+ `GeckoViewHooks/`),
+  `libGeckoEngine.a` (+ `Bridge/`), and the three extensions with `org.mozilla.ios.Fennec.Gecko*`
+  IDs; `Gecko.xcconfig`; `build.sh`; entitlements.
+- Upstream edits, all inert without the flag: `Fennec.xcconfig` (one include), `Client.xcodeproj`
+  (3 lines: a synced `Client/Gecko` folder), `main.swift`, `AppDelegate.swift`, `Tab.swift`,
+  `BrowserViewController.swift`, `TabTrayViewController.swift`,
+  `BrowserViewController+ToolBarActionMenuDelegate.swift`.
+- New in Client: `Gecko/GeckoBridge.swift` (calls libGeckoEngine by symbol name, so Client never
+  imports Gecko modules), `Gecko/TabEngine.swift` (a tab's session, view and page state),
+  `Gecko/BrowserViewController+GeckoEngine.swift` (the WebKit-free parts of didCommit/didFinish).
+- WebEngine: new `Gecko/EngineSessionNewTabDelegate.swift`. GeckoEngine: non-web schemes open
+  externally; new-window requests become new Fennec tabs.
+
+**Findings:**
+- Gecko's iOS `onNewSession` handler can't work as written: it asserts the returned session is
+  open, then calls `open()`, which fatal-errors on an open session.
+- Fennec's `navigateInTab` keyed history recording off `webView.url`; it now uses `tab.url` for
+  Gecko tabs, otherwise visits would silently never be recorded.
+- Fennec's tab tray has an experiment selector besides the segmented control; both needed the
+  Private entry disabled.
+- The "Class … is implemented in both" console warnings appear in the stock WebKit test run too
+  (35 of them); they're from upstream's debug build, not this work.
+
+**Stubbed in Gecko mode** (per the design): all user-script features (logins, autofill, reader
+mode, find in page, translations, Summarize, night/no-image mode, context menus), JS dialogs,
+downloads, content blocking UI, tab thumbnails, toolbar hide-on-scroll, Clear Data for Gecko's
+profile, Gecko session history.
+
+**Reproduce:**
+```
+cd gecko-port/proof && python3 -m http.server 8765 --bind 127.0.0.1 &
+gecko-port/FennecGecko/build.sh            # prints the .app path
+xcrun simctl install <udid> <that path>
+cd gecko-port/SimDriver && xcodegen generate
+TEST_RUNNER_PROOF_BUNDLE=org.mozilla.ios.Fennec \
+TEST_RUNNER_PROOF_ARGS="FIREFOX_TEST FIREFOX_CLEAR_PROFILE FIREFOX_SKIP_INTRO FIREFOX_SKIP_WHATS_NEW FIREFOX_SKIP_ETP_COVER_SHEET FIREFOX_SKIP_CONTEXTUAL_HINTS FIREFOX_SKIP_TERMS_OF_USE SKIP_DEFAULT_BROWSER_ONBOARDING SKIP_APPLE_INTELLIGENCE DISABLE_ANIMATIONS" \
+TEST_RUNNER_PROOF_SITE_URL='https://en.wikipedia.org/wiki/Gecko_(software)' \
+TEST_RUNNER_PROOF_ENGINE_URL='localhost:8765/engine.html' TEST_RUNNER_PROOF_LINK_TAP='0.5,0.4975' \
+TEST_RUNNER_PROOF_BACK_ID='TabToolbar.backButton' TEST_RUNNER_PROOF_DIR=<dir> \
+xcodebuild test -project SimDriver.xcodeproj -scheme SimDriver \
+  -destination 'platform=iOS Simulator,id=<udid>' -only-testing:SimDriverUITests/EngineProofTest
+```
+`TabsProofTest` takes `TABS_ARGS`, `TABS_RELAUNCH_ARGS`, `TABS_URL_1`, `TABS_URL_2`, `TABS_DIR`.
