@@ -356,3 +356,44 @@ xcodebuild test -project SimDriver.xcodeproj -scheme SimDriver \
   -destination 'platform=iOS Simulator,id=<udid>' -only-testing:SimDriverUITests/EngineProofTest
 ```
 `TabsProofTest` takes `TABS_ARGS`, `TABS_RELAUNCH_ARGS`, `TABS_URL_1`, `TABS_URL_2`, `TABS_DIR`.
+
+## M4: on the phone (2026-11-06)
+
+**Result:** Fennec on Gecko runs on Eric's iPhone 17 Pro (iOS 27). Eric loaded his own site,
+ai.ericeaglstun.com, and it rendered (`m4-iphone-site.png`). Stock Firefox is still installed
+next to it, untouched.
+
+**How Gecko runs without BrowserEngineKit:** single-process. Gecko's iOS port starts its content,
+networking and GPU work in BrowserEngineKit process extensions, which need entitlements a dev
+certificate can't have. With `MOZ_FORCE_DISABLE_E10S=1` Gecko allows non-e10s (our build isn't
+`MOZILLA_OFFICIAL`), but GeckoView's `geckoview.js` hard-coded `remote="true"` on the browser
+element, so it still tried to launch a content process (`com.apple.browserEngineKit error 1`).
+Gecko patch on `ios-gecko-engine`, `c2950af31193`: only set `remote`/`remoteType`/
+`maychangeremoteness` when `browserTabsRemoteAutostart` is true. Proven first in the simulator
+with the extensions deleted: engine page GECKO, link, Back. The bridge sets the env var when the
+app has no `Extensions` folder, so simulator builds keep multi-process.
+
+**JIT:** `javascript.options.main_process_disable_jit` defaults to true on iOS, and all content
+now runs in the main process, so JS is interpreted. Nothing needed switching.
+
+**Device build of Gecko:** `gecko-port/mozconfig-ios-device`, 513 s clean. Xcode 27's iPhone SDK
+`.tbd` stubs list only `arm64e, arm64e.x1`; Gecko's lld rejects them ("unknown architecture").
+Apple's ld accepts them for arm64, but configure's ld64 probe relied on `LD_PRINT_OPTIONS`, which
+ld-prime dropped. Gecko patch `b38ef2b984d9` also accepts "ld: unknown options: --version".
+
+**Signing:** team `EKNXJ2NR3G`, bundle ID `com.rackandpinecone.FennecGecko`. First install used the
+team wildcard profile; Fennec then got stuck on the onboarding Skip step, because its prefs,
+Nimbus database and tab store live in the app group (`group.<bundle id>`) and a wildcard profile
+can't grant one. Needed from Eric: sign Xcode in, accept the updated Program License
+Agreement, create the App Group in the portal; the agent linked it to the App ID with his OK.
+`device.sh` now signs with that profile (app group, increased memory limit, keychain group).
+
+**Not yet measured:** speed against WebKit Firefox on real sites, memory use, and whether tabs
+restore after a relaunch on the phone. The address bar shows the not-secure icon on an HTTPS
+site, because `onHasOnlySecureContentChanged` is still a stub in `TabEngine`.
+
+**Reproduce:**
+```
+cd mozilla-firefox && MOZCONFIG=../firefox-ios/gecko-port/mozconfig-ios-device ./mach build
+firefox-ios/gecko-port/FennecGecko/device.sh     # DEVICE=<udid> to pick a phone
+```

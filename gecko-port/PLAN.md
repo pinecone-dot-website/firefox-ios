@@ -1,7 +1,7 @@
 # Firefox iOS on Gecko: Plan
 
 **Branch:** `gecko-engine` (fork: `eaglstun/firefox-ios`, upstream: `mozilla-mobile/firefox-ios`)
-**Status:** M0–M3 done. Next: M4 (dev-signed build on Eric's iPhone).
+**Status:** M0–M3 done. M4: Fennec on Gecko runs on Eric's iPhone (single-process, no JIT). Left in M4: Eric's notes on speed against WebKit Firefox.
 **Evidence log:** `RESULT.md` in this folder. Every milestone ends with proof there.
 
 ## The goal
@@ -123,9 +123,28 @@ Practical facts learned along the way. Keep this current; details and history li
   stable 1.94.1; don't change it without asking.
 - **GeckoTestBrowser uses BrowserEngineKit.** It's a host app plus Networking, Rendering and
   WebContent process extensions, with `com.apple.developer.web-browser-engine.*` entitlements.
-  The simulator doesn't enforce entitlements; a personal dev certificate can't get them. Plan for
-  that at M4: Gecko would need to run without those extensions, or we learn how Reynard
-  sideloads it.
+  The simulator doesn't enforce entitlements; a dev certificate can't get them. On the device
+  Gecko runs single-process instead (next note).
+- **Fennec on the iPhone:** `gecko-port/FennecGecko/device.sh` builds, signs and installs
+  (about 90 s warm, plus Gecko). It needs `mozilla-firefox/obj-ios-device`, built with
+  `gecko-port/mozconfig-ios-device` (8.5 min clean). The app ships without the process
+  extensions; the bridge then sets `MOZ_FORCE_DISABLE_E10S=1`, and
+  `FennecGecko/Prefs/fennec-single-process.js` keeps networking and compositing in-process.
+  Gecko already disables JIT in its main process on iOS, so all JS is interpreted.
+  - Bundle ID `com.rackandpinecone.FennecGecko` on team `EKNXJ2NR3G`, display name "Fennec
+    Gecko". Eric's stock Firefox (`org.mozilla.ios.Firefox`) must never be overwritten;
+    `device.sh` refuses Firefox IDs.
+  - Signing uses Xcode's team profile for that ID, which carries the app group
+    `group.com.rackandpinecone.FennecGecko`. Fennec needs the group: without it onboarding
+    gets stuck and tabs don't save. If the profile is missing, build `FennecGecko/DeviceProfile/`
+    once with `-allowProvisioningUpdates DEVELOPMENT_TEAM=EKNXJ2NR3G
+    DEVICE_BUNDLE_ID=com.rackandpinecone.FennecGecko`. Xcode's CLI won't create app groups
+    itself; this one was made and linked to the App ID in the developer portal.
+  - Xcode 27's iPhone SDK stubs list only `arm64e`/`arm64e.x1`, which Gecko's lld can't read, so
+    the device mozconfig uses Apple's ld (`--enable-linker=ld64`, with a configure fix on the
+    Gecko branch).
+  - Phone screenshots: `xcrun devicectl device capture screenshot --device <udid>
+    --destination <png>`. Console: `devicectl device process launch --console`.
 
 ## Rules for the agent
 
