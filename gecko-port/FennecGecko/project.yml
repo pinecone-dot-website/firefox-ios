@@ -17,7 +17,9 @@ settings:
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
     GECKO_TOPSRCDIR: $(SRCROOT)/../../../mozilla-firefox
-    GECKO_TOPOBJDIR: $(GECKO_TOPSRCDIR)/obj-ios-sim
+    GECKO_OBJDIR_iphonesimulator: obj-ios-sim
+    GECKO_OBJDIR_iphoneos: obj-ios-device
+    GECKO_TOPOBJDIR: $(GECKO_TOPSRCDIR)/$(GECKO_OBJDIR_$(PLATFORM_NAME))
     GECKO_IOS_SRC: $(GECKO_TOPSRCDIR)/mobile/ios/GeckoTestBrowser
 packages:
   BrowserKit:
@@ -114,3 +116,8 @@ schemes:
         WebContent: all
         Networking: all
         Rendering: all
+  FennecGeckoDevice:
+    build:
+      targets:
+        GeckoEngine: all
+        GeckoView: all

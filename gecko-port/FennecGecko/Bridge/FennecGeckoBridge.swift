@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import Foundation
 import GeckoView
 import WebEngine
 
@@ -14,6 +15,12 @@ public func fxiosGeckoRun(
     _ argv: UnsafeMutablePointer<UnsafeMutablePointer<Int8>?>,
     _ appDelegateClassName: String
 ) {
+    // Device builds ship without the BrowserEngineKit process extensions (a dev certificate
+    // can't get their entitlements), so Gecko runs everything in this process.
+    let extensions = Bundle.main.bundleURL.appendingPathComponent("Extensions")
+    if !FileManager.default.fileExists(atPath: extensions.path) {
+        setenv("MOZ_FORCE_DISABLE_E10S", "1", 1)
+    }
     GeckoEmbedder.setAppDelegateClassName(appDelegateClassName)
     GeckoRuntime.main(argc: argc, argv: argv)
 }
