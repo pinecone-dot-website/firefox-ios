@@ -30,6 +30,9 @@ final class GeckoEngineSession: NSObject, EngineSession {
     private var isWindowReady = false
     private var pendingLoad: String?
 
+    /// Schemes Gecko loads itself. Anything else goes to `UIApplication.open`.
+    static let webSchemes: Set<String> = ["http", "https", "about", "data", "blob", "file"]
+
     var isActive = false {
         didSet {
             guard isActive != oldValue, geckoSession.isOpen() else { return }
@@ -136,6 +139,17 @@ extension GeckoEngineSession: NavigationDelegate {
     }
 
     func onLoadRequest(session: GeckoSession, request: LoadRequest) async -> AllowOrDeny {
+        guard let url = URL(string: request.uri) else { return .deny }
+        guard GeckoEngineSession.webSchemes.contains(url.scheme?.lowercased() ?? "") else {
+            if request.hasUserGesture {
+                await UIApplication.shared.open(url)
+            }
+            return .deny
+        }
+        if request.target == .new, let newTabDelegate = delegate as? EngineSessionNewTabDelegate {
+            newTabDelegate.onRequestOpenNewTab(url: url)
+            return .deny
+        }
         return .allow
     }
 
@@ -143,6 +157,8 @@ extension GeckoEngineSession: NavigationDelegate {
         return .allow
     }
 
+    // Gecko's iOS handler can't accept a returned session yet (it asserts the session is
+    // open, then opens it again), so new windows go through onLoadRequest's new-tab path.
     func onNewSession(session: GeckoSession, uri: String) async -> GeckoSession? {
         return nil
     }

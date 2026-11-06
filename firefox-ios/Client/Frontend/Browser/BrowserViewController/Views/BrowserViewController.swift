@@ -2664,6 +2664,30 @@ class BrowserViewController: UIViewController,
         dispatchBackForwardToolbarAction(canGoForward: canGoForward, windowUUID: windowUUID)
     }
 
+    #if GECKO_ENGINE
+    /// Gecko-backed tabs report through `TabEngine` instead of KVO on their `WKWebView`.
+    func handleEngineEvent(_ event: TabEngineEvent, tab: Tab) {
+        switch event {
+        case .url(let url):
+            handleEngineLocationChange(url: url, tab: tab)
+        case .title:
+            handleTitleChanged(tab: tab)
+        case .loading(let isLoading):
+            handleLoading(isLoading: isLoading, tab: tab)
+            if !isLoading {
+                handleEngineLoadFinished(tab: tab)
+            }
+        case .progress(let progress):
+            guard tab === tabManager.selectedTab else { return }
+            addressToolbarContainer.updateProgressBar(progress: progress)
+        case .canGoBack(let canGoBack):
+            handleCanGoBackChanged(tab: tab, canGoBack: canGoBack)
+        case .canGoForward(let canGoForward):
+            handleCanGoForwardChanged(tab: tab, canGoForward: canGoForward)
+        }
+    }
+    #endif
+
     private func handleHasOnlySecureContentChanged(webView: WKWebView) {
         store.dispatch(
             TrackingProtectionAction(windowUUID: windowUUID,
@@ -3636,7 +3660,12 @@ class BrowserViewController: UIViewController,
             updateReaderModeState(for: tab, readerModeState: .unavailable)
         }
 
-        if let url = webView.url {
+        #if GECKO_ENGINE
+        let pageURL = tab.engine != nil ? tab.url : webView.url
+        #else
+        let pageURL = webView.url
+        #endif
+        if let url = pageURL {
             if (!InternalURL.isValid(url: url) || url.isReaderModeURL) && !url.isFileURL {
                 recordVisitForLocationChange(tab, navigation: navigation)
                 tab.readabilityResult = nil
@@ -4385,6 +4414,9 @@ extension BrowserViewController {
 extension BrowserViewController: LegacyTabDelegate {
     func tab(_ tab: Tab, didCreateWebView webView: WKWebView) {
         webView.frame = contentContainer.frame
+        #if GECKO_ENGINE
+        observeEngine(of: tab)
+        #endif
         // Observers that live as long as the tab. Make sure these are all cleared in willDeleteWebView below!
         beginObserving(webView: webView)
         self.scrollController.beginObserving(scrollView: webView.scrollView)

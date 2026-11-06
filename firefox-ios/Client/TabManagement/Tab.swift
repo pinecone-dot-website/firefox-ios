@@ -184,10 +184,16 @@ class Tab: NSObject,
     }
 
     var isLoading: Bool {
+        #if GECKO_ENGINE
+        if let engine { return engine.isLoading }
+        #endif
         return webView?.isLoading ?? false
     }
 
     var estimatedProgress: Double {
+        #if GECKO_ENGINE
+        if let engine { return engine.estimatedProgress }
+        #endif
         return webView?.estimatedProgress ?? 0
     }
 
@@ -210,6 +216,9 @@ class Tab: NSObject,
     }
 
     var title: String? {
+        #if GECKO_ENGINE
+        if let engine { return engine.title?.isEmpty == false ? engine.title : nil }
+        #endif
         if let title = webView?.title, !title.isEmpty {
             return webView?.title
         }
@@ -273,6 +282,9 @@ class Tab: NSObject,
         // FXIOS-9785 This could result in the back button never being enabled for restored tabs
         assert(webView != nil, "We should not be trying to enable or disable the back button before the webView is set")
 
+        #if GECKO_ENGINE
+        if let engine { return engine.canGoBack }
+        #endif
         return webView?.canGoBack ?? false
     }
 
@@ -280,11 +292,20 @@ class Tab: NSObject,
         // FXIOS-9785 This could result in the forward button never being enabled for restored tabs
         assert(webView != nil, "We should not be trying to enable or disable the forward button before the webView is set")
 
+        #if GECKO_ENGINE
+        if let engine { return engine.canGoForward }
+        #endif
         return webView?.canGoForward ?? false
     }
 
     var userActivity: NSUserActivity?
     var webView: TabWebView?
+    #if GECKO_ENGINE
+    /// Renders and drives the page for a normal tab. `webView` stays as a dormant shell that hosts
+    /// `engine.view`. Private tabs get no engine and stay on WebKit, since Gecko on iOS can't
+    /// keep a session private yet.
+    private(set) var engine: TabEngine?
+    #endif
     weak var tabDelegate: LegacyTabDelegate?
     var loginAlert: SaveLoginAlert?
     var lastExecutedTime: Timestamp
@@ -560,6 +581,15 @@ class Tab: NSObject,
         // which allows the content appear beneath the toolbars in the BrowserViewController
         webView.scrollView.layer.masksToBounds = false
 
+        #if GECKO_ENGINE
+        if !isPrivate {
+            let engine = TabEngine.make()
+            self.engine = engine
+            webView.addSubview(engine.view)
+            engine.view.pinToSuperview()
+        }
+        #endif
+
         restore(webView, interactionState: restoreSessionData)
 
         self.webView = webView
@@ -584,6 +614,13 @@ class Tab: NSObject,
     }
 
     func restore(_ webView: WKWebView, interactionState: Data? = nil) {
+        #if GECKO_ENGINE
+        // Gecko session history isn't saved yet, so a restored tab reloads its last URL.
+        if let engine {
+            if let url { engine.load(url) }
+            return
+        }
+        #endif
         if let url = url {
             if let internalURL = InternalURL(url),
                internalURL.isAboutHomeURL {
@@ -659,6 +696,10 @@ class Tab: NSObject,
         webViewLoadingObserver?.invalidate()
         webViewLoadingObserver = nil
         webView = nil
+        #if GECKO_ENGINE
+        engine?.close()
+        engine = nil
+        #endif
 
         deleteDownloadedDocuments(docsURL: temporaryDocumentsSession)
         addUITestMemoryLeakDetectionUIElement()
@@ -697,6 +738,9 @@ class Tab: NSObject,
         // if the file was cancelled then return and avoid calling webView.goBack
         // since the previous page is already there
         guard !cancelTemporaryDocumentDownload() else { return }
+        #if GECKO_ENGINE
+        if let engine { return engine.session.goBack() }
+        #endif
         _ = webView?.goBack()
     }
 
@@ -704,6 +748,9 @@ class Tab: NSObject,
         // if the file was cancelled then return and avoid calling webView.goForward
         // since the previous page is already there
         guard !cancelTemporaryDocumentDownload() else { return }
+        #if GECKO_ENGINE
+        if let engine { return engine.session.goForward() }
+        #endif
         _ = webView?.goForward()
     }
 
@@ -715,6 +762,13 @@ class Tab: NSObject,
     @discardableResult
     func loadRequest(_ request: URLRequest) -> WKNavigation? {
         cancelTemporaryDocumentDownload(forceReload: false)
+        #if GECKO_ENGINE
+        if let engine {
+            lastRequest = request
+            if let url = request.url { engine.load(url) }
+            return nil
+        }
+        #endif
         if let webView = webView {
             // Convert about:reader?url=http://example.com URLs to local ReaderMode URLs
             if let url = request.url,
@@ -736,6 +790,9 @@ class Tab: NSObject,
     }
 
     func stop() {
+        #if GECKO_ENGINE
+        engine?.session.stopLoading()
+        #endif
         webView?.stopLoading()
         cancelTemporaryDocumentDownload()
     }
@@ -744,6 +801,16 @@ class Tab: NSObject,
         if cancelTemporaryDocumentDownload() {
             return
         }
+        #if GECKO_ENGINE
+        if let engine {
+            if engine.url != nil {
+                engine.session.reload(bypassCache: bypassCache)
+            } else if let url {
+                engine.load(url)
+            }
+            return
+        }
+        #endif
         // If the current page is an error page, and the reload button is tapped, load the original URL
         if let url = webView?.url, let internalUrl = InternalURL(url), let page = internalUrl.originalURLFromErrorPage {
             let request = URLRequest(url: page, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData)

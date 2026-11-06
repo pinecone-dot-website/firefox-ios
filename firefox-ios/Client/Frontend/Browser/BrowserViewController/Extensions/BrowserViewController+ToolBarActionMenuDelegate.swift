@@ -190,7 +190,7 @@ extension BrowserViewController {
         case .tabs:
             toolbarTelemetry.tabTrayButtonLongPressed(isPrivate: tabManager.selectedTab?.isPrivate ?? false)
             return .init(children: [
-                UIMenu(options: .displayInline, children: [getNewTabAction(), getNewPrivateTabAction()]),
+                UIMenu(options: .displayInline, children: newTabActions()),
                 UIMenu(options: .displayInline, children: [getCloseTabAction()])
             ])
         default:
@@ -200,8 +200,17 @@ extension BrowserViewController {
 
     func makeNewTabMenu() -> UIMenu {
         return .init(children: [
-            UIMenu(options: .displayInline, children: [getNewTabAction(), getNewPrivateTabAction()])
+            UIMenu(options: .displayInline, children: newTabActions())
         ])
+    }
+
+    private func newTabActions() -> [UIAction] {
+        #if GECKO_ENGINE
+        // Private browsing is hidden in Gecko builds (gecko-port/M3-DESIGN.md).
+        return [getNewTabAction()]
+        #else
+        return [getNewTabAction(), getNewPrivateTabAction()]
+        #endif
     }
 
     private func getLocationBarActions() -> [UIAction] {
