@@ -87,3 +87,56 @@ TEST_RUNNER_DRIVER_URL='fennec://open-url?url=https%3A%2F%2Fen.wikipedia.org%2Fw
 TEST_RUNNER_DRIVER_SHOT=$PWD/../m0-fennec.png \
 xcodebuild test -project SimDriver.xcodeproj -scheme SimDriver -destination 'platform=iOS Simulator,id=<udid>'
 ```
+
+## M1: done (2026-11-06)
+
+Gecko built from source for the iOS Simulator. Mozilla's GeckoTestBrowser renders a live page
+with it. No Firefox iOS code was involved, and Gecko itself needed no patches.
+
+- Gecko source: `mozilla-firefox` `main` @ `d9bd6be9a67e`, unmodified.
+- Mozconfig: `gecko-port/mozconfig-ios-sim`:
+  ```
+  ac_add_options --enable-application=mobile/ios
+  ac_add_options --target=aarch64-apple-ios-sim
+  mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-ios-sim
+  ```
+  (`aarch64-apple-ios-sim` is already the default on Apple Silicon; it's spelled out so nobody
+  has to know that.)
+- Toolchain:
+  - configure fetched Gecko's own clang etc. into `~/.mozbuild`; no `mach bootstrap` run.
+  - Rust: Gecko main requires at least 1.95.0, and the machine default is stable 1.94.1. I
+    installed `1.95` side by side (`rustup toolchain install 1.95 --profile minimal --target
+    aarch64-apple-ios-sim`) and pinned it to the checkout with `rustup override set 1.95`. The
+    default toolchain is unchanged.
+- Commands, from `mozilla-firefox/`:
+  - `MOZCONFIG=…/gecko-port/mozconfig-ios-sim ./mach --no-interactive configure`, 43 s.
+  - `MOZCONFIG=… ./mach --no-interactive build`, **887 s (14 m 47 s)** wall time. It was a clean
+    build with 216 compiler warnings and no errors. The Mac swapped heavily (about 50 GB of
+    swap-in), and the iPhone simulator shut itself down partway through.
+- Output:
+  - **Objdir 17 GB.**
+  - `dist/bin/XUL` is a 248 MB arm64 Mach-O dylib, alongside the NSS, mozglue, codec and
+    lgpllibs dylibs.
+  - `dist/include/GeckoView/` holds `GeckoViewSwiftSupport.h` and `IOSBootstrap.h`.
+- GeckoTestBrowser, from `mobile/ios/GeckoTestBrowser/`, built in 14 s:
+  ```
+  xcodebuild -project GeckoTestBrowser.xcodeproj -scheme GeckoTestBrowser \
+    -destination 'platform=iOS Simulator,id=632AEFF1-…' \
+    CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= CODE_SIGN_STYLE=Manual \
+    GECKO_TOPOBJDIR=…/mozilla-firefox/obj-ios-sim build
+  ```
+  - Ad-hoc signing replaces Mozilla's team ID.
+  - `GECKO_TOPOBJDIR` is set explicitly. Otherwise `GeckoView/AddGecko.sh` asks `mach environment`
+    for the objdir, and mach doesn't know our `MOZCONFIG`.
+  - The app is 327 MB. It's a BrowserEngineKit host app with Networking, Rendering and
+    WebContent `.appex` extensions; Gecko's XUL is embedded via `GeckoView.framework`.
+- Run: SimDriver typed `https://en.wikipedia.org/wiki/Gecko_(software)` into the search bar.
+  That needed a fix: GeckoTestBrowser's bar is a `UISearchBar`, which XCUITest reports as a
+  `searchField`, so `DRIVER_TYPE` now matches text and search fields.
+  The page rendered fully: text, links, infobox and logo.
+  Screenshot: `m1-geckotestbrowser.png`.
+- Observations for M2:
+  - GeckoTestBrowser's `UI/RootViewController.swift` is a sibling of SampleBrowser's (same
+    `browse(to:)`, same structure), loading through `geckoview.session?.load(_:)`.
+  - Its Swift `GeckoView` layer (`GeckoView/*.swift`: `GeckoSession`, `ProgressDelegate`,
+    `EventDispatcher`, …) is what `GeckoEngine` will adapt.

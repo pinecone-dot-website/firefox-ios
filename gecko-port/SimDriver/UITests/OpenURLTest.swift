@@ -6,7 +6,7 @@ import XCTest
 /// - `DRIVER_BUNDLE`: bundle id of the app to drive.
 /// - `DRIVER_ARGS`: space-separated launch arguments for that app.
 /// - `DRIVER_URL`: URL handed to the system, e.g. `fennec://open-url?url=...`.
-/// - `DRIVER_TYPE`: text typed into the app's first text field, followed by Return.
+/// - `DRIVER_TYPE`: text typed into the app's first text or search field, followed by Return.
 ///   Use this instead of `DRIVER_URL` for apps without a URL scheme.
 /// - `DRIVER_SHOT`: absolute path for the PNG screenshot.
 /// - `DRIVER_WAIT`: seconds to wait for the page before the screenshot (default 10).
@@ -31,8 +31,13 @@ final class OpenURLTest: XCTestCase {
                 timeout = 2
             }
         } else if let text = env["DRIVER_TYPE"] {
-            let field = app.textFields.firstMatch
-            XCTAssertTrue(field.waitForExistence(timeout: 15), "no text field to type into")
+            let field = app.descendants(matching: .any).matching(
+                NSPredicate(format: "elementType IN %@", [
+                    XCUIElement.ElementType.textField.rawValue,
+                    XCUIElement.ElementType.searchField.rawValue,
+                ])
+            ).firstMatch
+            XCTAssertTrue(field.waitForExistence(timeout: 15), "no text or search field to type into")
             field.tap()
             field.typeText(text + "\n")
         } else {

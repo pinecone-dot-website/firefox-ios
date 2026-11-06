@@ -1,7 +1,7 @@
 # Firefox iOS on Gecko: Plan
 
 **Branch:** `gecko-engine` (fork: `eaglstun/firefox-ios`, upstream: `mozilla-mobile/firefox-ios`)
-**Status:** M0 done (Xcode 27.2). M1 in progress: first libxul build running.
+**Status:** M0 and M1 done. Next: M2 (`GeckoEngine` in SampleBrowser).
 **Evidence log:** `RESULT.md` in this folder. Every milestone ends with proof there.
 
 ## The goal
@@ -87,6 +87,12 @@ Practical facts learned along the way. Keep this current; details and history li
   `MOZCONFIG=<that path> ./mach build` from `mozilla-firefox/`. The objdir is
   `mozilla-firefox/obj-ios-sim`. Gecko's toolchains (clang etc.) download themselves into
   `~/.mozbuild` during configure.
+- **GeckoTestBrowser:** build it with ad-hoc signing and an explicit objdir:
+  `CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= CODE_SIGN_STYLE=Manual GECKO_TOPOBJDIR=<objdir>`.
+  The full command is in `RESULT.md`, M1. It has no URL scheme; drive it with SimDriver's
+  `DRIVER_TYPE`.
+- **Machine load:** a clean Gecko build takes about 15 min and swaps hard, and can kill a
+  booted simulator. Boot it again with `xcrun simctl boot <udid>` before driving it.
 - **Rust:** Gecko main needs Rust 1.95 or newer. `mozilla-firefox/` has a rustup directory
   override to 1.95 (with the `aarch64-apple-ios-sim` target). The machine default stays on
   stable 1.94.1; don't change it without asking.
