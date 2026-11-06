@@ -1,7 +1,7 @@
 # Firefox iOS on Gecko: Plan
 
 **Branch:** `gecko-engine` (fork: `eaglstun/firefox-ios`, upstream: `mozilla-mobile/firefox-ios`)
-**Status:** M0 done (Xcode 27.2). Next: M1.
+**Status:** M0 done (Xcode 27.2). M1 in progress: first libxul build running.
 **Evidence log:** `RESULT.md` in this folder. Every milestone ends with proof there.
 
 ## The goal
@@ -58,7 +58,7 @@ an entry in `RESULT.md`. Simulator first, device last.
 
 | #   | Milestone                                                                                                                                                                                                                                                                                                                                                                                                                                 | Proof                                                                                                                                                                                                                                           |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M0  | **Baseline.** Build `SampleBrowser` and `Fennec` unmodified in the iOS Simulator. Record the exact Xcode, simulator, and command lines. Note: upstream's README asks for Xcode 27.1; this Mac has 27.0. If 27.0 can't build it, stop and tell Eric. Don't upgrade Xcode yourself.                                                                                                                                                         | Both apps load a page. Screenshots.                                                                                                                                                                                                             |
+| M0  | **Baseline.** Build `SampleBrowser` and `Fennec` unmodified in the iOS Simulator. Record the exact Xcode, simulator, and command lines. Done on Xcode 27.2 (27.0 couldn't build Fennec). Don't upgrade Xcode yourself.                                                                                                                                                                        | Both apps load a page. Screenshots.                                                                                                                                                                                                             |
 | M1  | **Gecko on its own.** Build libxul for the iOS Simulator from `mozilla-firefox/` and run GeckoTestBrowser. No Firefox iOS code involved. Record the mozconfig, build time, and objdir size.                                                                                                                                                                                                                                               | GeckoTestBrowser renders a live page in the simulator. Screenshot.                                                                                                                                                                              |
 | M2  | **`GeckoEngine` in SampleBrowser.** Add `GeckoEngine`, `GeckoEngineSession`, and `GeckoEngineView` conforming to the `WebEngine` protocols, backed by the Gecko build from M1. Switch it in at `EngineProvider.swift` behind a compile-time flag, so the WKEngine path still builds. Keep the Gecko implementation in its own folder or target, next to `WKWebview/`, not mixed into it.                                                  | SampleBrowser loads Wikipedia, follows a link, goes back. Prove it's Gecko, not WebKit, with a page that reports `navigator.userAgent` and something only Gecko answers, such as `CSS.supports("-moz-appearance", "none")`. Screenshot of both. |
 | M3  | **Design checkpoint, then the real app.** _Before writing code_, write `gecko-port/M3-DESIGN.md`: every place Client depends on WebKit types, grouped by feature (navigation, tabs, find, reader mode, user scripts, content blocking, downloads, auth...). Propose the smallest slice that gets Fennec browsing on Gecko and what gets stubbed. **Stop and get Eric's go-ahead on it.** Then build it behind the same compile-time flag. | Fennec browses on Gecko: URL bar, tabs, back/forward. Same proof page as M2.                                                                                                                                                                    |
@@ -66,6 +66,29 @@ an entry in `RESULT.md`. Simulator first, device last.
 
 Past M4 is open: content blocking, add-ons, Sync. Don't start any of it without
 Eric picking it.
+
+## Working notes
+
+Practical facts learned along the way. Keep this current; details and history live in `RESULT.md`.
+
+- **Xcode 27.2** (27B52) is installed. This install has no Simulator.app, so simulators run
+  headless. Use the iPhone 18 Pro on iOS 27.0, `632AEFF1-AFF8-44B0-A707-1BFD55CCCDEF`.
+- **Builds:** pass `-skipMacroValidation -skipPackagePluginValidation` to `xcodebuild`. After an
+  Xcode upgrade, delete `DerivedData/<Project>-*/Build` if Swift macros fail to load
+  `SwiftSyntax`.
+- **Screenshots and proof runs:** `gecko-port/SimDriver/` is a standalone XCUITest project that
+  opens a URL in any app, taps iOS's "Open in …?" prompt, and saves a PNG. Usage is in
+  `SimDriver/UITests/OpenURLTest.swift`. For Fennec, pass the UI-test launch flags
+  (`FIREFOX_TEST FIREFOX_SKIP_INTRO …`; the full list is in `RESULT.md`, M0) and open
+  `fennec://open-url?url=<encoded>`. SampleBrowser opens a URL with
+  `-SampleBrowserStartURL <url>`.
+- **Gecko build:** the mozconfig is `gecko-port/mozconfig-ios-sim`, used via
+  `MOZCONFIG=<that path> ./mach build` from `mozilla-firefox/`. The objdir is
+  `mozilla-firefox/obj-ios-sim`. Gecko's toolchains (clang etc.) download themselves into
+  `~/.mozbuild` during configure.
+- **Rust:** Gecko main needs Rust 1.95 or newer. `mozilla-firefox/` has a rustup directory
+  override to 1.95 (with the `aarch64-apple-ios-sim` target). The machine default stays on
+  stable 1.94.1; don't change it without asking.
 
 ## Rules for the agent
 

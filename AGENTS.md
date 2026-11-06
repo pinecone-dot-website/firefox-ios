@@ -8,6 +8,8 @@ engine, in a dev-signed build that never ships to the App Store.
 workspace layout (Gecko source and a reference project live in sibling folders),
 the milestones, and the stop-and-ask rules. Log every result in
 `gecko-port/RESULT.md`.
+PLAN.md's "Working notes" section covers the toolchain, simulator, and build setup.
+Keep both files current as you learn things.
 
 Everything below this section is upstream Mozilla's agent guidance. It still
 applies to code you write here.
