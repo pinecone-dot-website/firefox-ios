@@ -388,6 +388,11 @@ can't grant one. Needed from Eric: sign Xcode in, accept the updated Program Lic
 Agreement, create the App Group in the portal; the agent linked it to the App ID with his OK.
 `device.sh` now signs with that profile (app group, increased memory limit, keychain group).
 
+**Eric's notes:** scrolling stutters a little. Not yet profiled. On UIKit, Gecko's async
+scrolling (APZ) stays on without e10s (`gfxPlatform::AsyncPanZoomEnabled`), so the likely costs
+are touch handling waiting on a main thread that page layout, interpreted JS and Fennec's UI now
+share, and Fennec being a Debug (`-Onone`) build.
+
 **Not yet measured:** speed against WebKit Firefox on real sites, memory use, and whether tabs
 restore after a relaunch on the phone. The address bar shows the not-secure icon on an HTTPS
 site, because `onHasOnlySecureContentChanged` is still a stub in `TabEngine`.
