@@ -1,7 +1,7 @@
 # Firefox iOS on Gecko: Plan
 
 **Branch:** `gecko-engine` (fork: `eaglstun/firefox-ios`, upstream: `mozilla-mobile/firefox-ios`)
-**Status:** set up, nothing built yet. Start at M0.
+**Status:** M0 done (Xcode 27.2). Next: M1.
 **Evidence log:** `RESULT.md` in this folder. Every milestone ends with proof there.
 
 ## The goal

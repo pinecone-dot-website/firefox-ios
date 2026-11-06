@@ -39,3 +39,51 @@ This failure is unrelated to the Xcode version. SampleBrowser has fallen behind 
 `AddressToolbarState` now takes `borderConfiguration:` instead of `borderPosition:`,
 `CompactBrowserAddressToolbar` no longer exists, and `RootViewController` no longer
 satisfies `AddressToolbarDelegate`. It needs source fixes on any Xcode version.
+
+## M0: done (2026-11-06)
+
+Both apps build and load a live page in the iOS Simulator on Xcode 27.2. Fennec needed no
+source changes. SampleBrowser needed a catch-up fix (below).
+
+- Toolchain: Xcode 27.2 (27B52), Swift 6.4.2 (swiftlang-6.4.2.1.9), iOS Simulator SDK 27.2.
+  Simulator: iPhone 18 Pro, iOS 27.0 runtime (24A434), `632AEFF1-AFF8-44B0-A707-1BFD55CCCDEF`.
+- Xcode upgrade fallout:
+  - Fennec's `ModifiedCopy` macro failed with "Unable to resolve Swift module dependency …
+    'SwiftSyntax'" because the build products came from Swift 6.4. Deleting
+    `DerivedData/Client-*/Build` (packages kept) fixed it.
+  - Simulator.app is missing from this Xcode 27.2 install. It isn't in
+    `Contents/Developer/Applications`, and Spotlight can't find it anywhere. The sims run
+    headless; screenshots come from `simctl io` or XCUITest.
+  - The first `simctl` call after the upgrade ran the first-launch component install itself.
+- Build command (from the repo root, scheme `Fennec` / `SampleBrowser`):
+  `xcodebuild -project <proj> -scheme <scheme> -destination 'platform=iOS Simulator,id=<udid>' -skipMacroValidation -skipPackagePluginValidation build`
+  - Fennec, cold (empty `Build/`, cached packages and compilation cache): 182 s. Built
+    for the iOS 26.5 sim, installed on the iOS 27.0 one.
+  - SampleBrowser, incremental after the fix: under 10 s.
+
+**SampleBrowser** (commit `e7ce2128e`): updated to the current ToolbarKit API. It now uses the
+single `RegularBrowserAddressToolbar`, the `borderConfiguration` it now requires, the new
+delegate method, and the `moreHorizontalRound` menu icon. It also gained a
+`-SampleBrowserStartURL <url>` launch argument:
+`xcrun simctl launch <udid> org.mozilla.ios.SampleBrowser -SampleBrowserStartURL 'https://…'`.
+Two cosmetic glitches remain in its address bar: a blank white square left of the URL, and a
+clipped icon above the bar. They don't block M2.
+Screenshot: `m0-samplebrowser.png`.
+
+**Fennec**: unmodified, loaded through `fennec://open-url?url=…`. iOS 27 shows an "Open in
+Fennec?" prompt for every `simctl openurl`, and with no Simulator window nothing can tap it.
+That's the reason `SimDriver/` exists: a standalone XCUITest project (xcodegen, not part of any
+upstream project) that launches an app, opens a URL, taps the system prompt, and saves a
+screenshot. The Fennec run uses the UI-test launch flags (`FIREFOX_TEST`,
+`FIREFOX_SKIP_INTRO`, …) to skip onboarding. Usage is in the header of
+`SimDriver/UITests/OpenURLTest.swift`; the exact command is below.
+Screenshot: `m0-fennec.png`.
+
+```
+cd gecko-port/SimDriver && xcodegen generate
+TEST_RUNNER_DRIVER_BUNDLE=org.mozilla.ios.Fennec \
+TEST_RUNNER_DRIVER_ARGS="FIREFOX_TEST FIREFOX_CLEAR_PROFILE FIREFOX_SKIP_INTRO FIREFOX_SKIP_WHATS_NEW FIREFOX_SKIP_ETP_COVER_SHEET FIREFOX_SKIP_CONTEXTUAL_HINTS FIREFOX_SKIP_TERMS_OF_USE SKIP_DEFAULT_BROWSER_ONBOARDING SKIP_APPLE_INTELLIGENCE DISABLE_ANIMATIONS" \
+TEST_RUNNER_DRIVER_URL='fennec://open-url?url=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FGecko_(software)' \
+TEST_RUNNER_DRIVER_SHOT=$PWD/../m0-fennec.png \
+xcodebuild test -project SimDriver.xcodeproj -scheme SimDriver -destination 'platform=iOS Simulator,id=<udid>'
+```
