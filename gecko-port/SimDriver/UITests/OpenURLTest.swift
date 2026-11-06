@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/
+
 import XCTest
 
 /// Opens a URL in another app on the simulator and saves a screenshot.
@@ -13,7 +17,7 @@ import XCTest
 final class OpenURLTest: XCTestCase {
     func testOpenURL() throws {
         let env = ProcessInfo.processInfo.environment
-        let bundle = try XCTUnwrap(env["DRIVER_BUNDLE"])
+        guard let bundle = env["DRIVER_BUNDLE"] else { throw XCTSkip("DRIVER_BUNDLE not set") }
         let wait = env["DRIVER_WAIT"].flatMap(Double.init) ?? 10
 
         let app = XCUIApplication(bundleIdentifier: bundle)
@@ -31,15 +35,7 @@ final class OpenURLTest: XCTestCase {
                 timeout = 2
             }
         } else if let text = env["DRIVER_TYPE"] {
-            let field = app.descendants(matching: .any).matching(
-                NSPredicate(format: "elementType IN %@", [
-                    XCUIElement.ElementType.textField.rawValue,
-                    XCUIElement.ElementType.searchField.rawValue,
-                ])
-            ).firstMatch
-            XCTAssertTrue(field.waitForExistence(timeout: 15), "no text or search field to type into")
-            field.tap()
-            field.typeText(text + "\n")
+            app.typeIntoFirstField(text)
         } else {
             XCTFail("set DRIVER_URL or DRIVER_TYPE")
         }
@@ -49,9 +45,6 @@ final class OpenURLTest: XCTestCase {
             open.tap()
             sleep(1)
         }
-        let png = XCUIScreen.main.screenshot().pngRepresentation
-        if let path = env["DRIVER_SHOT"] {
-            try png.write(to: URL(fileURLWithPath: path))
-        }
+        try saveScreenshot(to: env["DRIVER_SHOT"])
     }
 }
