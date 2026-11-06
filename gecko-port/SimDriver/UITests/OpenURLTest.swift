@@ -6,13 +6,14 @@ import XCTest
 /// - `DRIVER_BUNDLE`: bundle id of the app to drive.
 /// - `DRIVER_ARGS`: space-separated launch arguments for that app.
 /// - `DRIVER_URL`: URL handed to the system, e.g. `fennec://open-url?url=...`.
+/// - `DRIVER_TYPE`: text typed into the app's first text field, followed by Return.
+///   Use this instead of `DRIVER_URL` for apps without a URL scheme.
 /// - `DRIVER_SHOT`: absolute path for the PNG screenshot.
 /// - `DRIVER_WAIT`: seconds to wait for the page before the screenshot (default 10).
 final class OpenURLTest: XCTestCase {
     func testOpenURL() throws {
         let env = ProcessInfo.processInfo.environment
         let bundle = try XCTUnwrap(env["DRIVER_BUNDLE"])
-        let url = try XCTUnwrap(env["DRIVER_URL"].flatMap(URL.init(string:)))
         let wait = env["DRIVER_WAIT"].flatMap(Double.init) ?? 10
 
         let app = XCUIApplication(bundleIdentifier: bundle)
@@ -21,13 +22,21 @@ final class OpenURLTest: XCTestCase {
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
         sleep(3)
 
-        XCUIDevice.shared.system.open(url)
-        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        let open = springboard.buttons["Open"]
-        var timeout: TimeInterval = 5
-        for _ in 0..<5 where open.waitForExistence(timeout: timeout) {
-            open.tap()
-            timeout = 2
+        let open = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Open"]
+        if let url = env["DRIVER_URL"].flatMap(URL.init(string:)) {
+            XCUIDevice.shared.system.open(url)
+            var timeout: TimeInterval = 5
+            for _ in 0..<5 where open.waitForExistence(timeout: timeout) {
+                open.tap()
+                timeout = 2
+            }
+        } else if let text = env["DRIVER_TYPE"] {
+            let field = app.textFields.firstMatch
+            XCTAssertTrue(field.waitForExistence(timeout: 15), "no text field to type into")
+            field.tap()
+            field.typeText(text + "\n")
+        } else {
+            XCTFail("set DRIVER_URL or DRIVER_TYPE")
         }
 
         Thread.sleep(forTimeInterval: wait)

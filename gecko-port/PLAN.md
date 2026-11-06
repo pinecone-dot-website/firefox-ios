@@ -77,7 +77,8 @@ Practical facts learned along the way. Keep this current; details and history li
   Xcode upgrade, delete `DerivedData/<Project>-*/Build` if Swift macros fail to load
   `SwiftSyntax`.
 - **Screenshots and proof runs:** `gecko-port/SimDriver/` is a standalone XCUITest project that
-  opens a URL in any app, taps iOS's "Open in …?" prompt, and saves a PNG. Usage is in
+  opens a URL in any app (through a URL scheme with `DRIVER_URL`, or by typing into the first
+  text field with `DRIVER_TYPE`), taps iOS's "Open in …?" prompt, and saves a PNG. Usage is in
   `SimDriver/UITests/OpenURLTest.swift`. For Fennec, pass the UI-test launch flags
   (`FIREFOX_TEST FIREFOX_SKIP_INTRO …`; the full list is in `RESULT.md`, M0) and open
   `fennec://open-url?url=<encoded>`. SampleBrowser opens a URL with
@@ -89,6 +90,11 @@ Practical facts learned along the way. Keep this current; details and history li
 - **Rust:** Gecko main needs Rust 1.95 or newer. `mozilla-firefox/` has a rustup directory
   override to 1.95 (with the `aarch64-apple-ios-sim` target). The machine default stays on
   stable 1.94.1; don't change it without asking.
+- **GeckoTestBrowser uses BrowserEngineKit.** It's a host app plus Networking, Rendering and
+  WebContent process extensions, with `com.apple.developer.web-browser-engine.*` entitlements.
+  The simulator doesn't enforce entitlements; a personal dev certificate can't get them. Plan for
+  that at M4: Gecko would need to run without those extensions, or we learn how Reynard
+  sideloads it.
 
 ## Rules for the agent
 
