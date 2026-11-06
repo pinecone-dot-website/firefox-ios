@@ -11,8 +11,7 @@ protocol AddressToolbarContainerDelegate: AnyObject {
 }
 
 class AddressToolbarContainer: UIView, ThemeApplicable {
-    private lazy var compactToolbar: CompactBrowserAddressToolbar =  .build { _ in }
-    private lazy var regularToolbar: RegularBrowserAddressToolbar = .build()
+    private lazy var toolbar: RegularBrowserAddressToolbar = .build()
 
     override init(frame: CGRect) {
         super.init(frame: .zero)
@@ -25,16 +24,7 @@ class AddressToolbarContainer: UIView, ThemeApplicable {
 
     func configure(_ model: AddressToolbarContainerModel,
                    toolbarDelegate: AddressToolbarDelegate) {
-        compactToolbar.configure(
-            config: model.state,
-            toolbarPosition: .top,
-            toolbarDelegate: toolbarDelegate,
-            leadingSpace: 0,
-            trailingSpace: 0,
-            isUnifiedSearchEnabled: false,
-            animated: false
-        )
-        regularToolbar.configure(
+        toolbar.configure(
             config: model.state,
             toolbarPosition: .top,
             toolbarDelegate: toolbarDelegate,
@@ -47,48 +37,27 @@ class AddressToolbarContainer: UIView, ThemeApplicable {
 
     override func becomeFirstResponder() -> Bool {
         super.becomeFirstResponder()
-        let isCompact = traitCollection.horizontalSizeClass == .compact
-        let toolbar = isCompact ? compactToolbar : regularToolbar
         return toolbar.becomeFirstResponder()
     }
 
     override func resignFirstResponder() -> Bool {
         super.resignFirstResponder()
-        let isCompact = traitCollection.horizontalSizeClass == .compact
-        let toolbar = isCompact ? compactToolbar : regularToolbar
         return toolbar.resignFirstResponder()
     }
 
-    // MARK: View Transitions
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        adjustLayout()
-    }
-
     private func setupLayout() {
-        adjustLayout()
-    }
-
-    private func adjustLayout() {
-        compactToolbar.removeFromSuperview()
-        regularToolbar.removeFromSuperview()
-
-        let isCompact = traitCollection.horizontalSizeClass == .compact
-        let toolbarToAdd = isCompact ? compactToolbar : regularToolbar
-
-        addSubview(toolbarToAdd)
+        addSubview(toolbar)
 
         NSLayoutConstraint.activate([
-            toolbarToAdd.topAnchor.constraint(equalTo: topAnchor),
-            toolbarToAdd.leadingAnchor.constraint(equalTo: leadingAnchor),
-            toolbarToAdd.bottomAnchor.constraint(equalTo: bottomAnchor),
-            toolbarToAdd.trailingAnchor.constraint(equalTo: trailingAnchor),
+            toolbar.topAnchor.constraint(equalTo: topAnchor),
+            toolbar.leadingAnchor.constraint(equalTo: leadingAnchor),
+            toolbar.bottomAnchor.constraint(equalTo: bottomAnchor),
+            toolbar.trailingAnchor.constraint(equalTo: trailingAnchor),
         ])
     }
 
     // MARK: - ThemeApplicable
     func applyTheme(theme: Theme) {
-        compactToolbar.applyTheme(theme: theme)
-        regularToolbar.applyTheme(theme: theme)
+        toolbar.applyTheme(theme: theme)
     }
 }

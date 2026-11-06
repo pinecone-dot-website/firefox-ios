@@ -65,6 +65,10 @@ class RootViewController: UIViewController,
 
         listenForThemeChanges(withNotificationCenter: notificationCenter)
         applyTheme()
+
+        if let startURL = UserDefaults.standard.string(forKey: "SampleBrowserStartURL") {
+            browse(to: startURL)
+        }
     }
 
     // MARK: View Transitions
@@ -250,6 +254,8 @@ class RootViewController: UIViewController,
     func addressToolbarDidTapSearchEngine(_ searchEngineView: UIView) {}
 
     func addressToolbarNeedsSearchReset() {}
+
+    func addressToolbarDidHideEditingAccessoryButton(_ addressToolbar: BrowserAddressToolbar) {}
 
     // MARK: - SearchViewDelegate
 
