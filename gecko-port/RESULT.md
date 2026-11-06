@@ -254,3 +254,23 @@ iPhone 18 Pro / iOS 27.2 (`D30C6397-…`):
 The committed M2 screenshots are from 27.0; the 27.2 ones were checked and are identical in
 content. That run also exposed a harness bug: an empty `PROOF_LINK_TAP` was treated as a
 coordinate. `EngineProofTest` now treats empty as unset. 27.2 is the default simulator from now on.
+
+## M3 design (2026-11-06)
+
+`M3-DESIGN.md` is written. No M3 code yet: per the plan it waits for Eric's go-ahead.
+
+What the survey found:
+- 97 Client files import WebKit; 146 `.webView` references in 51 files. `TabWebView` *is a*
+  `WKWebView`, and features reach the page three ways: web view properties (KVO in BVC),
+  the 1,748-line navigation/UI delegate extension, and 15 user scripts installed per tab.
+- The user-script channel has no Gecko counterpart on iOS (GeckoView uses WebExtensions for
+  that, and none are wired), so every script-based feature is stubbed for M3.
+- Gecko's shared GeckoView JS already handles history index, restore state, find in page and
+  scroll messages; the iOS Swift layer just doesn't send them. Because our projects compile the
+  `GeckoView` framework from Gecko's source folder, Swift files from this repo can add those
+  calls without patching Gecko.
+- Gecko hard-codes `AppShellDelegate` as the app delegate, which collides with Fennec's
+  `AppDelegate`. That and three other choices (private tabs, a dormant `WKWebView` per tab,
+  xcconfig vs pbxproj plumbing) are listed as decisions in the doc.
+- Five files only show Mozilla pages in their own `WKWebView` and can stay WebKit; four
+  import WebKit without using it.

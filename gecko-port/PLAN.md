@@ -1,7 +1,7 @@
 # Firefox iOS on Gecko: Plan
 
 **Branch:** `gecko-engine` (fork: `eaglstun/firefox-ios`, upstream: `mozilla-mobile/firefox-ios`)
-**Status:** M0, M1, M2 done. Next: M3 design (`M3-DESIGN.md`), then stop for Eric's go-ahead.
+**Status:** M0, M1, M2 done. M3 design written (`M3-DESIGN.md`); waiting on Eric's go-ahead and its four decisions.
 **Evidence log:** `RESULT.md` in this folder. Every milestone ends with proof there.
 
 ## The goal
