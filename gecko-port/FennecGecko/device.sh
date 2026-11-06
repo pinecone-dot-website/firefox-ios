@@ -14,7 +14,8 @@
 # Environment:
 #   DEVICE      device UDID (default: Eric's iPhone)
 #   BUNDLE_ID   default com.rackandpinecone.FennecGecko; never a stock Firefox ID
-#   PROFILE     .mobileprovision covering BUNDLE_ID (default: the team's wildcard profile)
+#   PROFILE     .mobileprovision for BUNDLE_ID (default: Xcode's team profile for it, which
+#               DeviceProfile/ makes; that gives the app group Fennec keeps its data in)
 #   IDENTITY    signing identity SHA-1 (default: first identity in PROFILE found in the keychain)
 #   NO_INSTALL  set to build and sign only
 
@@ -24,7 +25,14 @@ HERE=${0:A:h}
 ROOT=${HERE:h:h}
 DEVICE=${DEVICE:-00008150-000455420C20401C}
 BUNDLE_ID=${BUNDLE_ID:-com.rackandpinecone.FennecGecko}
-PROFILE=${PROFILE:-$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/d3df3aef-db7c-447b-a8c1-add1bcf923e8.mobileprovision}
+PROFILES="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+if [[ -z ${PROFILE:-} ]]; then
+    for f in "$PROFILES"/*.mobileprovision(Nom); do
+        name=$(security cms -D -i "$f" 2>/dev/null | plutil -extract Name raw -o - - 2>/dev/null) || continue
+        if [[ $name == "iOS Team Provisioning Profile: $BUNDLE_ID" ]]; then PROFILE=$f; break; fi
+    done
+fi
+[[ -n ${PROFILE:-} ]] || { echo "no profile for $BUNDLE_ID: build DeviceProfile/ once (see its project.yml)"; exit 1; }
 FLAGS=(-skipMacroValidation -skipPackagePluginValidation -quiet)
 NOSIGN=(CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=)
 
@@ -90,6 +98,12 @@ cat > "$WORK/app.entitlements" <<EOF
 	<array>
 		<string>$TEAM.$BUNDLE_ID</string>
 	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.$BUNDLE_ID</string>
+	</array>
+	<key>com.apple.developer.kernel.increased-memory-limit</key>
+	<true/>
 </dict>
 </plist>
 EOF
