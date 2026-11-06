@@ -22,4 +22,8 @@ if AppConstants.isRunningUITests || AppConstants.isRunningPerfTests {
 // https://stackoverflow.com/questions/108183/how-to-prevent-sigpipes-or-handle-them-properly
 signal(SIGPIPE, SIG_IGN)
 
+#if GECKO_ENGINE
+GeckoBridge.run(appDelegateClassName: appDelegate)
+#else
 _ = UIApplicationMain(CommandLine.argc, CommandLine.unsafeArgv, NSStringFromClass(UIApplication.self), appDelegate)
+#endif

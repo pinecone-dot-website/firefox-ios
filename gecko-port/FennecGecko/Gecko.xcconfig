@@ -1,0 +1,19 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+// Included (optionally) at the end of Client/Configuration/Fennec.xcconfig.
+// Does nothing unless the build passes GECKO_ENGINE_BUILD=YES, and then only for the
+// Client target: build.sh in this folder does that.
+
+GECKO_SUPPORT_PRODUCTS = $(PROJECT_DIR)/../gecko-port/FennecGecko/build/Build/Products/Debug$(EFFECTIVE_PLATFORM_NAME)
+
+GECKO_SWIFT_FLAGS_YES_Client = -DGECKO_ENGINE
+GECKO_LDFLAGS_YES_Client = -force_load $(GECKO_SUPPORT_PRODUCTS)/libGeckoEngine.a -framework GeckoView
+GECKO_FRAMEWORK_PATHS_YES_Client = $(GECKO_SUPPORT_PRODUCTS)
+GECKO_ENTITLEMENTS_YES_Client = $(PROJECT_DIR)/../gecko-port/FennecGecko/Entitlements/Fennec.entitlements
+
+OTHER_SWIFT_FLAGS = $(inherited) $(GECKO_SWIFT_FLAGS_$(GECKO_ENGINE_BUILD)_$(TARGET_NAME))
+OTHER_LDFLAGS = $(inherited) $(GECKO_LDFLAGS_$(GECKO_ENGINE_BUILD)_$(TARGET_NAME))
+FRAMEWORK_SEARCH_PATHS = $(inherited) $(GECKO_FRAMEWORK_PATHS_$(GECKO_ENGINE_BUILD)_$(TARGET_NAME))
+CODE_SIGN_ENTITLEMENTS = $(GECKO_ENTITLEMENTS_$(GECKO_ENGINE_BUILD)_$(TARGET_NAME):default=Client/Entitlements/FennecApplication.entitlements)

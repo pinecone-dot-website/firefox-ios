@@ -1,7 +1,10 @@
 # M3 design: Fennec on Gecko
 
-**Status:** proposal. No M3 code is written. Waiting on Eric's go-ahead and the four decisions in
-[Decisions for Eric](#decisions-for-eric).
+**Status:** approved 2026-11-06. Eric's decisions:
+1. Gecko patch for the app delegate (1a).
+2. **Hide private browsing in Gecko builds** (not the WebKit-for-private-tabs option).
+3. Dormant `WKWebView` per tab.
+4. xcconfig `#include?` plus build script.
 
 **M3 goal:** Fennec browses on Gecko, with the URL bar, tabs, and back/forward
 working. The proof is the same as M2: Wikipedia loads, `engine.html` shows GECKO,

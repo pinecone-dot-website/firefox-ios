@@ -281,10 +281,16 @@ class AppDelegate: UIResponder,
         logger.log("applicationWillTerminate", level: .info, category: .lifecycle)
         profile.shutdown()
         documentLogger.logPendingDownloads()
+        #if GECKO_ENGINE
+        GeckoBridge.applicationWillTerminate()
+        #endif
     }
 
     func applicationDidReceiveMemoryWarning(_ application: UIApplication) {
         logger.log("Received memory warning", level: .info, category: .lifecycle)
+        #if GECKO_ENGINE
+        GeckoBridge.applicationDidReceiveMemoryWarning()
+        #endif
         Task {
             for uuid in windowManager.allWindowUUIDs(includingReserved: false) {
                 await windowManager.tabManager(for: uuid)?.offloadBackgroundWebViews()
