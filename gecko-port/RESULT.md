@@ -392,6 +392,11 @@ Agreement, create the App Group in the portal; the agent linked it to the App ID
 scrolling (APZ) stays on without e10s (`gfxPlatform::AsyncPanZoomEnabled`), so the likely costs
 are touch handling waiting on a main thread that page layout, interpreted JS and Fennec's UI now
 share, and Fennec being a Debug (`-Onone`) build.
+It stutters for the whole scroll, on a page with no JavaScript. Likely cause, found in the
+source: Gecko on iOS has no hardware vsync. `gfxPlatformMac::CreateGlobalHardwareVsyncSource`
+falls back to `GetSoftwareVsyncSource()` with `// TODO: CADisplayLink`, so frames are paced
+by a timer that isn't locked to the 120 Hz ProMotion display. Fennec's Info.plist also lacks
+`CADisableMinimumFrameDurationOnPhone`, which caps app-driven frame rates at 60 Hz.
 
 **Not yet measured:** speed against WebKit Firefox on real sites, memory use, and whether tabs
 restore after a relaunch on the phone. The address bar shows the not-secure icon on an HTTPS
