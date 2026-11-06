@@ -15,6 +15,8 @@ import XCTest
 /// - `PROOF_LINK_TAP`: where the engine page's link is, as fractions of the screen, e.g. `0.5,0.62`.
 /// - `PROOF_BACK_ID`: accessibility identifier of the app's Back button (default `backButton`).
 /// - `PROOF_DIR`: folder for the screenshots.
+/// - `PROOF_ATTACH`: set to drive an already-running app (e.g. one launched with a console)
+///   instead of launching it.
 /// - `PROOF_APP_ENV`: optional `KEY=VALUE` pairs (space-separated) for the app's environment.
 final class EngineProofTest: XCTestCase {
     func testEngineProof() throws {
@@ -31,7 +33,11 @@ final class EngineProofTest: XCTestCase {
             let parts = pair.split(separator: "=", maxSplits: 1).map(String.init)
             if parts.count == 2 { app.launchEnvironment[parts[0]] = parts[1] }
         }
-        app.launch()
+        if env["PROOF_ATTACH"] != nil {
+            app.activate()
+        } else {
+            app.launch()
+        }
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
         sleep(3)
 

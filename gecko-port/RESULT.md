@@ -422,6 +422,11 @@ phone.
 
 **Open, found during this check:** the simulator's multi-process mode (with the BrowserEngineKit
 extensions) no longer loads pages: the address bar takes the URL but the tab stays on the
-homepage. Forcing the old timer vsync (`layout.frame_rate=60`) fails the same way, so it isn't the
-vsync change. Untested in that mode since the single-process `geckoview.js` patch
-(`c2950af31193`), which is the first suspect. Doesn't affect the phone.
+homepage. The parent logs `XPC connection received encountered an error` and
+`oop-frameloader-crashed`: the WebContent extension process starts, then dies with no crash
+report. Ruled out: the vsync patch (fails with `layout.frame_rate=60` and with the commit
+reverted), the `geckoview.js` patch (fails with the original file), stale simulator state
+(fresh boot and reinstall). Not yet checked: the Fennec-side changes since M3
+(`FennecGecko/project.yml` objdir variable, the bridge's `setenv`). Doesn't affect the phone,
+which runs single-process. SimDriver's `EngineProofTest` now takes `PROOF_ATTACH` to drive an
+app already launched with `simctl launch --console-pty`, which is how Gecko's stderr was read.
