@@ -407,3 +407,21 @@ site, because `onHasOnlySecureContentChanged` is still a stub in `TabEngine`.
 cd mozilla-firefox && MOZCONFIG=../firefox-ios/gecko-port/mozconfig-ios-device ./mach build
 firefox-ios/gecko-port/FennecGecko/device.sh     # DEVICE=<udid> to pick a phone
 ```
+
+### M4: vsync fix for the scroll stutter (2026-11-06)
+
+Gecko patch `101d4c89e53c` on `ios-gecko-engine`: `gfx/thebes/UIKitVsyncSource.mm`, a
+`CADisplayLink` on its own run-loop thread, at the screen's maximum frame rate, replacing the
+timer-driven software vsync on iOS. `device.sh` adds `CADisableMinimumFrameDurationOnPhone` to
+Fennec's Info.plist so the link can run at 120 Hz.
+
+Verified in the simulator, single-process (the phone's mode): Gecko logs the display link at
+16.67 ms (the simulator is 60 Hz); the proof run loads Wikipedia and the engine page, follows the
+link and goes Back. Phone app built (`NO_INSTALL=1 device.sh`); not yet installed or judged on the
+phone.
+
+**Open, found during this check:** the simulator's multi-process mode (with the BrowserEngineKit
+extensions) no longer loads pages: the address bar takes the URL but the tab stays on the
+homepage. Forcing the old timer vsync (`layout.frame_rate=60`) fails the same way, so it isn't the
+vsync change. Untested in that mode since the single-process `geckoview.js` patch
+(`c2950af31193`), which is the first suspect. Doesn't affect the phone.

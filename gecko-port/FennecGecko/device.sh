@@ -81,6 +81,8 @@ cp Prefs/fennec-single-process.js "$GRE/defaults/pref/"
 
 plutil -replace CFBundleIdentifier -string "$BUNDLE_ID" "$APP/Info.plist"
 plutil -replace CFBundleDisplayName -string "Fennec Gecko" "$APP/Info.plist"
+# Lets Gecko's CADisplayLink run at the display's full rate (120 Hz on ProMotion phones).
+plutil -replace CADisableMinimumFrameDurationOnPhone -bool YES "$APP/Info.plist"
 cp "$PROFILE" "$APP/embedded.mobileprovision"
 
 cat > "$WORK/app.entitlements" <<EOF
