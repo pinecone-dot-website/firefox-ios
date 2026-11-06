@@ -242,3 +242,15 @@ xcodebuild test -project SimDriver.xcodeproj -scheme SimDriver \
 ```
 The Gecko app needs `mozilla-firefox/obj-ios-sim` from M1. With a warm build, it builds in
 about 15 s after a source change.
+
+### M2 rerun on iOS 27.2 (2026-11-06)
+
+The iOS 27.2 simulator runtime was installed after M2, so the same builds were re-run on the
+iPhone 18 Pro / iOS 27.2 (`D30C6397-…`):
+- SampleBrowserGecko passed all four proof steps: Wikipedia; engine page **GECKO**,
+  `CSS.supports` `true`, same `rv:162.0 Gecko/162.0` UA; followed the link; Back.
+- Stock SampleBrowser shows **NOT GECKO**, `CSS.supports` `false`.
+
+The committed M2 screenshots are from 27.0; the 27.2 ones were checked and are identical in
+content. That run also exposed a harness bug: an empty `PROOF_LINK_TAP` was treated as a
+coordinate. `EngineProofTest` now treats empty as unset. 27.2 is the default simulator from now on.

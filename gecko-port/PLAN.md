@@ -71,8 +71,10 @@ Eric picking it.
 
 Practical facts learned along the way. Keep this current; details and history live in `RESULT.md`.
 
-- **Xcode 27.2** (27B52) is installed. This install has no Simulator.app, so simulators run
-  headless. Use the iPhone 18 Pro on iOS 27.0, `632AEFF1-AFF8-44B0-A707-1BFD55CCCDEF`.
+- **Xcode 27.2** (27B52). This install has no Simulator.app, so simulators run headless.
+  The default simulator is the iPhone 18 Pro on **iOS 27.2**, `D30C6397-DF3A-4D34-ACB7-3E4C9DF97F02`.
+  There's also an iPhone Duo on a separate 27.2 runtime (`FC56A158-C7CB-4643-B916-D1EBB53A48CC`),
+  for Fennec's foldable code paths. Older runtimes (27.0, 26.5, 18.4) are still installed.
 - **Builds:** pass `-skipMacroValidation -skipPackagePluginValidation` to `xcodebuild`. After an
   Xcode upgrade, delete `DerivedData/<Project>-*/Build` if Swift macros fail to load
   `SwiftSyntax`.

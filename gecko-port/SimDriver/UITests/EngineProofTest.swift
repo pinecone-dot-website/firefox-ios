@@ -38,7 +38,7 @@ final class EngineProofTest: XCTestCase {
         sleep(6)
         try shot("2-engine.png")
 
-        guard let linkTap = env["PROOF_LINK_TAP"] else { return }
+        guard let linkTap = env["PROOF_LINK_TAP"], !linkTap.isEmpty else { return }
         app.tap(normalized: linkTap)
         sleep(5)
         try shot("3-followed.png")
