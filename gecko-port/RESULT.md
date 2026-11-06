@@ -140,3 +140,105 @@ with it. No Firefox iOS code was involved, and Gecko itself needed no patches.
     `browse(to:)`, same structure), loading through `geckoview.session?.load(_:)`.
   - Its Swift `GeckoView` layer (`GeckoView/*.swift`: `GeckoSession`, `ProgressDelegate`,
     `EventDispatcher`, …) is what `GeckoEngine` will adapt.
+
+## M2: done (2026-11-06)
+
+SampleBrowser runs on Gecko through the `WebEngine` protocols. It loads Wikipedia, follows a
+link and goes back. The proof page reports Gecko; the same page in stock SampleBrowser
+reports WebKit. Code: commit `9dfff0af7`.
+
+**Proof** (simulator: iPhone 18 Pro, iOS 27.0; run by `SimDriver` `EngineProofTest`):
+
+| Step | Gecko build | Screenshot |
+| --- | --- | --- |
+| Load `https://en.wikipedia.org/wiki/Gecko_(software)` | renders fully | `m2-gecko-1-site.png` |
+| Load `gecko-port/proof/engine.html` | **GECKO**; `CSS.supports("-moz-appearance","none")` = `true`; UA `Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X; rv:162.0) Gecko/162.0 Firefox/162.0` | `m2-gecko-2-engine.png` |
+| Tap "Follow this link" | "Second page"; the server logged `GET /second.html` | `m2-gecko-3-followed.png` |
+| Native Back button | back on the engine page; Forward becomes enabled | `m2-gecko-4-back.png` |
+| Control: stock SampleBrowser, same page | **NOT GECKO**; `CSS.supports` = `false`; UA `AppleWebKit/605.1.15` | `m2-webkit-2-engine.png` |
+
+**Code layout:**
+- `BrowserKit/Sources/GeckoEngine/`: `GeckoEngine`, `GeckoEngineSession`, `GeckoEngineView`.
+  - This folder is not a SwiftPM target. It's compiled as a static library by the Gecko project
+    below, because it needs `GeckoView`, which only exists after a Gecko build.
+  - It has to be its own module. SampleBrowser declares its own `NavigationDelegate` protocol,
+    which shadows GeckoView's inside the app module. And `GeckoView.NavigationDelegate` can't
+    be written out in full, because `GeckoView` resolves to the class, not the module.
+- `gecko-port/SampleBrowserGecko/project.yml` (xcodegen) builds:
+  - **SampleBrowserGecko** (`org.eaglstun.geckoport.SampleBrowserGecko`): SampleBrowser's own
+    sources with `GECKO_ENGINE` set. `App/` replaces the two files that assume UIKit owns
+    launch.
+  - **GeckoEngine**, the static library.
+  - **GeckoView.framework**, compiled from Gecko's `mobile/ios/GeckoTestBrowser/GeckoView/` by
+    path, with `AddGecko.sh` copying `XUL` and the dylibs out of the objdir.
+  - **WebContent, Networking, Rendering** ExtensionKit extensions, compiled from Gecko's sources by
+    path, with our own entitlements and bundle IDs.
+- Upstream edits:
+  - `SampleBrowser/…/EngineProvider.swift`: +7 lines, `#if GECKO_ENGINE`.
+  - New file `WebEngine/Gecko/BrowserURL+ExternalEngine.swift`, a public `engineURL`, because
+    `BrowserURL.url` is internal. It has a new test, `BrowserURLExternalEngineTests`, which
+    passes.
+- Unchanged and verified after M2: `SampleBrowser.xcodeproj` builds on WebKit (the control
+  run above), and Fennec builds (135 s).
+- SwiftLint 0.65.0 (pinned) is clean on all new and changed files.
+
+**Findings:**
+- **Gecko owns the process.**
+  - `GeckoRuntime.main` runs `XRE_main`, which calls `UIApplicationMain(…, @"AppShellDelegate")`,
+    so the app's own `AppDelegate` never becomes the delegate. Scenes still come from
+    Info.plist.
+  - SampleBrowser's `DependencyHelper` calls `fatalError` unless `UIApplication.shared.delegate`
+    is its `AppDelegate`. So the Gecko build replaces `AppDelegate.swift` and
+    `DependencyHelper.swift` with versions in `App/` that run off
+    `didFinishLaunchingNotification`.
+  - **M3 will hit the same thing in Fennec, which has a much bigger `AppDelegate`.**
+- **Loads sent right after `GeckoSession.open()` are dropped.** `GeckoEngineSession` holds them
+  until Gecko reports its first location (about:blank), then sends them.
+- **The extensions need `@executable_path/../../Frameworks` in their runpath** to find
+  `GeckoView.framework` inside the host app. Without it, WebContent dies at launch ("Library
+  missing"), and Gecko logs `Failed to launch tab subprocess` and never fetches anything.
+- **iOS also requires version keys in each extension's Info.plist** (`MARKETING_VERSION`,
+  `CURRENT_PROJECT_VERSION`). Without them, install fails with "Invalid placeholder attributes".
+- **A static library that imports WebEngine needs**
+  `-Xcc -fmodule-map-file=$(GENERATED_MODULEMAP_DIR)/GCDWebServers.modulemap` and explicit modules
+  turned off, or it can't resolve WebEngine's ObjC dependency.
+- **`WebEngine` isn't engine-neutral yet** (an M3 design input):
+  - `EngineSessionDependencies` carries `WKWebViewParameters` and `WKReaderModeDelegate`, and
+    its fields are internal.
+  - `EngineSessionBackForwardListItem.swift` imports WebKit.
+  - `URLFormatter` calls `WKInternalURL`.
+- **Upstream quirk, not fixed:** `DefaultURLFormatter.handleLocalHost` prefixes `http://`
+  to whatever was typed, so typing `http://localhost:…` turns into a search. Type
+  `localhost:8765/engine.html` instead.
+
+**What `GeckoEngineSession` doesn't do yet.** These are no-ops, because GeckoView's iOS
+embedding doesn't expose them:
+- back/forward list items
+- `goToHistory`, `restore(state:)`
+- find in page
+- zoom
+- tracking-protection modes, no-image mode
+- `scrollToTop`
+- clearing data
+- popups (`onNewSession` returns nil)
+
+These were wired and seen working: location, title, loading state, progress, and
+can-go-back/forward. `reload(bypassCache:)` ignores the flag.
+
+**Reproduce:**
+```
+python3 -m http.server 8765 --bind 127.0.0.1   # in gecko-port/proof
+cd gecko-port/SampleBrowserGecko && xcodegen generate
+xcodebuild -project SampleBrowserGecko.xcodeproj -scheme SampleBrowserGecko \
+  -destination 'platform=iOS Simulator,id=<udid>' -skipMacroValidation -skipPackagePluginValidation build
+xcrun simctl install <udid> <DerivedData>/…/SampleBrowserGecko.app
+cd ../SimDriver && xcodegen generate
+TEST_RUNNER_PROOF_BUNDLE=org.eaglstun.geckoport.SampleBrowserGecko \
+TEST_RUNNER_PROOF_SITE_URL='https://en.wikipedia.org/wiki/Gecko_(software)' \
+TEST_RUNNER_PROOF_ENGINE_URL='localhost:8765/engine.html' \
+TEST_RUNNER_PROOF_LINK_TAP='0.5,0.567' TEST_RUNNER_PROOF_DIR=<dir> \
+xcodebuild test -project SimDriver.xcodeproj -scheme SimDriver \
+  -destination 'platform=iOS Simulator,id=<udid>' -only-testing:SimDriverUITests/EngineProofTest
+```
+The Gecko app needs `mozilla-firefox/obj-ios-sim` from M1. With a warm build, it builds in
+about 15 s after a source change.

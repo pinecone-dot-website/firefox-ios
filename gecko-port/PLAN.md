@@ -1,7 +1,7 @@
 # Firefox iOS on Gecko: Plan
 
 **Branch:** `gecko-engine` (fork: `eaglstun/firefox-ios`, upstream: `mozilla-mobile/firefox-ios`)
-**Status:** M0 and M1 done. Next: M2 (`GeckoEngine` in SampleBrowser).
+**Status:** M0, M1, M2 done. Next: M3 design (`M3-DESIGN.md`), then stop for Eric's go-ahead.
 **Evidence log:** `RESULT.md` in this folder. Every milestone ends with proof there.
 
 ## The goal
@@ -91,6 +91,18 @@ Practical facts learned along the way. Keep this current; details and history li
   `CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= CODE_SIGN_STYLE=Manual GECKO_TOPOBJDIR=<objdir>`.
   The full command is in `RESULT.md`, M1. It has no URL scheme; drive it with SimDriver's
   `DRIVER_TYPE`.
+- **Gecko SampleBrowser:** `gecko-port/SampleBrowserGecko/` (xcodegen). `GeckoEngine` sources live in
+  `BrowserKit/Sources/GeckoEngine/`, are not a SwiftPM target, and are built as a static library by
+  that project. The `GECKO_ENGINE` compile flag selects Gecko in `EngineProvider.swift`.
+  `SampleBrowser.xcodeproj` stays on WebKit.
+- **Embedding Gecko, the gotchas** (details in `RESULT.md`, M2):
+  - `GeckoRuntime.main` replaces the app delegate with Gecko's `AppShellDelegate`.
+  - Loads sent before the first location event are dropped; `GeckoEngineSession` queues them.
+  - The extensions need `@executable_path/../../Frameworks` in their runpath, and version keys
+    in their Info.plists.
+- **Proof run:** serve `gecko-port/proof/` on `localhost:8765`, then run SimDriver's
+  `EngineProofTest`. Type `localhost:8765/engine.html` without `http://`; with it,
+  SampleBrowser's URL formatter turns it into a search.
 - **Machine load:** a clean Gecko build takes about 15 min and swaps hard, and can kill a
   booted simulator. Boot it again with `xcrun simctl boot <udid>` before driving it.
 - **Rust:** Gecko main needs Rust 1.95 or newer. `mozilla-firefox/` has a rustup directory
