@@ -147,6 +147,8 @@ Practical facts learned along the way. Keep this current; details and history li
     --destination <png>`. Console: `devicectl device process launch --console`.
   - devicectl installs, launches and screenshots over the network once the phone is paired; no
     cable needed.
+  - Gecko logging on the phone: `devicectl device process launch --console --environment-variables
+    '{"MOZ_LOG":"Focus:4,timestamp"}' <bundle id>`. The phone must be unlocked to launch.
 
 ## Rules for the agent
 
