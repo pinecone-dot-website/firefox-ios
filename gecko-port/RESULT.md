@@ -432,3 +432,24 @@ reverted), the `geckoview.js` patch (fails with the original file), stale simula
 (`FennecGecko/project.yml` objdir variable, the bridge's `setenv`). Doesn't affect the phone,
 which runs single-process. SimDriver's `EngineProofTest` now takes `PROOF_ATTACH` to drive an
 app already launched with `simctl launch --console-pty`, which is how Gecko's stderr was read.
+
+### M4: keyboard popping up after scrolling (2026-11-06)
+
+Eric: after scrolling, the keyboard often appeared with nothing focused; keys typed nowhere. Logged
+on the phone over Wi-Fi (temporary `fprintf` in `widget/uikit/nsWindow.mm`, plus
+`MOZ_LOG=IMEStateManager:5,Focus:4` through `devicectl device process launch
+--environment-variables`):
+
+- A tap (often the one that stops a fling) made Gecko call `nsWindow::SetFocus`, which made the
+  view first responder. `canBecomeFirstResponder` said yes because `mInputContext` was still its
+  default (IME enabled): `SetInputContext` was never called.
+- It was never called because focus never reached content: `nsFocusManager` logged `Current
+  Window: 0`, `In Active Window: 0`, `SendFocus: 0` when Google's search `textarea` was tapped.
+  The view only activated its window on `UIWindowDidBecomeKeyNotification`, which fires at
+  launch, before Fennec creates any Gecko view. So no focus events, no IME state, and with the
+  first fix alone, no keyboard on text fields.
+
+Gecko patch `f0226134ec44` on `ios-gecko-engine`: `mInputContext` starts disabled; the view
+activates its window when it joins a key window (`didMoveToWindow`) and on each touch, deactivates
+when it leaves one, and only reacts to key changes of its own window. Eric on the phone: no
+keyboard while scrolling, and the keyboard comes up and types into Google's search box.
