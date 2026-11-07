@@ -145,6 +145,8 @@ Practical facts learned along the way. Keep this current; details and history li
     Gecko branch).
   - Phone screenshots: `xcrun devicectl device capture screenshot --device <udid>
     --destination <png>`. Console: `devicectl device process launch --console`.
+  - devicectl installs, launches and screenshots over the network once the phone is paired; no
+    cable needed.
 
 ## Rules for the agent
 

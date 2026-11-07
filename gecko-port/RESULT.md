@@ -417,8 +417,10 @@ Fennec's Info.plist so the link can run at 120 Hz.
 
 Verified in the simulator, single-process (the phone's mode): Gecko logs the display link at
 16.67 ms (the simulator is 60 Hz); the proof run loads Wikipedia and the engine page, follows the
-link and goes Back. Phone app built (`NO_INSTALL=1 device.sh`); not yet installed or judged on the
-phone.
+link and goes Back.
+
+On the phone (installed over Wi-Fi, no cable): Eric reports scrolling is "much smoother". The
+stutter was the timer-driven vsync.
 
 **Open, found during this check:** the simulator's multi-process mode (with the BrowserEngineKit
 extensions) no longer loads pages: the address bar takes the URL but the tab stays on the
