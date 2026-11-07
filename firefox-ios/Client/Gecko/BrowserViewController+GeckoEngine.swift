@@ -28,6 +28,21 @@ extension BrowserViewController {
         updateInContentHomePanel(tab.url, focusUrlBar: true)
     }
 
+    /// `handleHasOnlySecureContentChanged(webView:)` without its `webView.url` check: a Gecko
+    /// tab's `WKWebView` never loads, so its URL is always nil.
+    func handleEngineSecureContentChanged(_ secure: Bool, tab: Tab) {
+        guard tab === tabManager.selectedTab else { return }
+        store.dispatch(
+            TrackingProtectionAction(windowUUID: windowUUID,
+                                     actionType: TrackingProtectionActionType.updateConnectionStatus)
+        )
+        let isWebsiteMode = tab.url?.isReaderModeURL == false
+        store.dispatch(
+            ToolbarModernAction.lockIconChanged(hasOnlySecureContent: secure, isWebsiteMode: isWebsiteMode),
+            forWindowUUID: windowUUID
+        )
+    }
+
     /// The parts of `webView(_:didFinish:)` that don't depend on WebKit.
     func handleEngineLoadFinished(tab: Tab) {
         guard let url = tab.url, InternalURL(url) == nil else { return }

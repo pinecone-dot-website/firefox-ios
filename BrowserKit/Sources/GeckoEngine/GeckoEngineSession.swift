@@ -176,6 +176,10 @@ extension GeckoEngineSession: ProgressDelegate {
     func onProgressChange(session: GeckoSession, progress: Int) {
         delegate?.onProgress(progress: Double(progress) / 100)
     }
+
+    func onSecurityChange(session: GeckoSession, securityInfo: SecurityInformation) {
+        delegate?.onHasOnlySecureContentChanged(secure: securityInfo.isSecure)
+    }
 }
 
 extension GeckoEngineSession: ContentDelegate {

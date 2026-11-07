@@ -2684,6 +2684,8 @@ class BrowserViewController: UIViewController,
             handleCanGoBackChanged(tab: tab, canGoBack: canGoBack)
         case .canGoForward(let canGoForward):
             handleCanGoForwardChanged(tab: tab, canGoForward: canGoForward)
+        case .hasOnlySecureContent(let secure):
+            handleEngineSecureContentChanged(secure, tab: tab)
         }
     }
     #endif

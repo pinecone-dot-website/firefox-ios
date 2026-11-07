@@ -585,6 +585,7 @@ class Tab: NSObject,
         if !isPrivate {
             let engine = TabEngine.make()
             self.engine = engine
+            webView.engine = engine
             webView.addSubview(engine.view)
             engine.view.pinToSuperview()
         }

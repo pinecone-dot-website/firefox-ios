@@ -453,3 +453,19 @@ Gecko patch `f0226134ec44` on `ios-gecko-engine`: `mInputContext` starts disable
 activates its window when it joins a key window (`didMoveToWindow`) and on each touch, deactivates
 when it leaves one, and only reacts to key changes of its own window. Eric on the phone: no
 keyboard while scrolling, and the keyboard comes up and types into Google's search box.
+
+### M4: lock icon on HTTPS (2026-11-06)
+
+HTTPS pages showed "not secure". GeckoView's iOS `ProgressDelegate` dropped
+`GeckoView:SecurityChanged` (a `TODO`), and `TabEngine` stubbed `onHasOnlySecureContentChanged`.
+
+- Gecko patch `4549507d9f53` on `ios-gecko-engine`: `SecurityInformation` and `onSecurityChange` in
+  `mobile/ios/GeckoTestBrowser/GeckoView/ProgressDelegate.swift`.
+- `GeckoEngineSession` forwards `isSecure` as `onHasOnlySecureContentChanged`. `TabEngine` keeps
+  it (false on internal pages) and reports `.hasOnlySecureContent`. `TabWebView.hasOnlySecureContent`
+  returns the engine's value for Gecko tabs, so every reader (toolbar, tracking-protection panel,
+  middleware) gets it. BVC re-dispatches the lock icon on the event, since its WebKit handler
+  compares against `webView.url`, which is always nil for a Gecko tab.
+
+Eric on the phone: lock on HTTPS sites, "not secure" on http://neverssl.com, and the panel says the
+connection is secure.

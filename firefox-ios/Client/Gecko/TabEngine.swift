@@ -15,6 +15,7 @@ enum TabEngineEvent {
     case progress(Double)
     case canGoBack(Bool)
     case canGoForward(Bool)
+    case hasOnlySecureContent(Bool)
 }
 
 /// The Gecko half of a `Tab`: its engine session, the view rendering it, and the page state
@@ -30,6 +31,7 @@ final class TabEngine {
     private(set) var estimatedProgress: Double = 0
     private(set) var canGoBack = false
     private(set) var canGoForward = false
+    private(set) var hasOnlySecureContent = false
 
     var onEvent: ((TabEngineEvent) -> Void)?
     var onOpenNewTab: ((URL) -> Void)?
@@ -63,6 +65,9 @@ final class TabEngine {
     }
 
     private func report(url: URL) {
+        if InternalURL(url) != nil {
+            hasOnlySecureContent = false
+        }
         self.url = url
         onEvent?(.url(url))
     }
@@ -80,7 +85,10 @@ extension TabEngine: @preconcurrency EngineSessionDelegate {
         report(url: url)
     }
 
-    func onHasOnlySecureContentChanged(secure: Bool) {}
+    func onHasOnlySecureContentChanged(secure: Bool) {
+        hasOnlySecureContent = secure
+        onEvent?(.hasOnlySecureContent(secure))
+    }
 
     func onProgress(progress: Double) {
         estimatedProgress = progress
