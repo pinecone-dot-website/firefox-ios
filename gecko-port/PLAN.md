@@ -1,6 +1,6 @@
 # Firefox iOS on Gecko: Plan
 
-**Branch:** `gecko-engine` (fork: `eaglstun/firefox-ios`, upstream: `mozilla-mobile/firefox-ios`)
+**Branch:** `gecko-engine` (forks: `pinecone-dot-website/firefox-ios` as remote `pinecone`, and the older `eaglstun/firefox-ios` as `origin`; upstream: `mozilla-mobile/firefox-ios`)
 **Status:** M0–M3 done. M4: Fennec on Gecko runs on Eric's iPhone (single-process, no JIT). Left in M4: Eric's notes on speed against WebKit Firefox. Debugger-assisted JIT (`JIT-DEBUGGER.md`) is researched and parked by Eric; don't start it without him.
 **Evidence log:** `RESULT.md` in this folder. Every milestone ends with proof there.
 
@@ -22,7 +22,7 @@ The new part is putting it inside the real Firefox iOS app.
 | Path               | What                                                                 | Rules                                                                                                                                                                              |
 | ------------------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `firefox-ios/`     | **This repo.** The fork. All app-side work happens here.             | Work on `gecko-engine`. Commit freely. Push only when asked.                                                                                                                       |
-| `mozilla-firefox/` | Gecko source (`github.com/mozilla-firefox/firefox`), blobless clone. | Read and build. If Gecko itself needs patching, do it on a local branch `ios-gecko-engine` and log every patch in `RESULT.md`. There's no fork of it yet; ask before creating one. |
+| `mozilla-firefox/` | Gecko source (`github.com/mozilla-firefox/firefox`), blobless clone. | Read and build. If Gecko itself needs patching, do it on a local branch `ios-gecko-engine` and log every patch in `RESULT.md`. Fork: `pinecone-dot-website/firefox`, remote `pinecone`, branch `ios-gecko-engine`. |
 | `reynard-browser/` | `minh-ton/reynard-browser`, a working Gecko-on-iOS browser.          | **Reference only. GPL-3.0. Never copy code from it.** See Licensing.                                                                                                               |
 
 ## The seam
