@@ -487,3 +487,8 @@ check in `Tab.swift` and a theme debug hook.
 First clean release build: 254 s. Build log has `-O`, no `-Onone`; `Client` is a single 65 MB
 binary instead of the 72 KB stub plus debug dylib of the `-Onone` build. Installed on Eric's
 iPhone 17 Pro over Wi-Fi. Not yet judged on the phone.
+
+**M4 closed (2026-11-12).** Eric, on the phone with the optimized build: "It's good enough for
+me!" That's the speed verdict against WebKit Firefox. No timings were taken. Memory use and tab
+restore after a relaunch on the phone are still unmeasured, and the simulator's multi-process
+mode is still broken (see the vsync entry above); none of these block the phone build.

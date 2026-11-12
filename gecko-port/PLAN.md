@@ -1,7 +1,7 @@
 # Firefox iOS on Gecko: Plan
 
 **Branch:** `gecko-engine` (forks: `pinecone-dot-website/firefox-ios` as remote `pinecone`, and the older `eaglstun/firefox-ios` as `origin`; upstream: `mozilla-mobile/firefox-ios`)
-**Status:** M0–M3 done. M4: Fennec on Gecko runs on Eric's iPhone (single-process, no JIT). Left in M4: Eric's notes on speed against WebKit Firefox. Debugger-assisted JIT (`JIT-DEBUGGER.md`) is researched and parked by Eric; don't start it without him.
+**Status:** M0–M4 done. Fennec on Gecko runs on Eric's iPhone (single-process, no JIT, optimized build); Eric judged its speed good enough (2026-11-12). Past M4 is open and waits for Eric to pick. Debugger-assisted JIT (`JIT-DEBUGGER.md`) is researched and parked by Eric; don't start it without him.
 **Evidence log:** `RESULT.md` in this folder. Every milestone ends with proof there.
 
 ## The goal
