@@ -126,7 +126,8 @@ Practical facts learned along the way. Keep this current; details and history li
   The simulator doesn't enforce entitlements; a dev certificate can't get them. On the device
   Gecko runs single-process instead (next note).
 - **Fennec on the iPhone:** `gecko-port/FennecGecko/device.sh` builds, signs and installs
-  (about 90 s warm, plus Gecko). It needs `mozilla-firefox/obj-ios-device`, built with
+  (about 90 s warm, plus Gecko). It builds optimized by default; `BUILD=debug` gives Fennec's
+  `-Onone` build (outputs in `build/` instead of `build/release/`). It needs `mozilla-firefox/obj-ios-device`, built with
   `gecko-port/mozconfig-ios-device` (8.5 min clean). The app ships without the process
   extensions; the bridge then sets `MOZ_FORCE_DISABLE_E10S=1`, and
   `FennecGecko/Prefs/fennec-single-process.js` keeps networking and compositing in-process.

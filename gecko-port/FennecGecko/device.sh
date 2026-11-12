@@ -18,6 +18,10 @@
 #               DeviceProfile/ makes; that gives the app group Fennec keeps its data in)
 #   IDENTITY    signing identity SHA-1 (default: first identity in PROFILE found in the keychain)
 #   NO_INSTALL  set to build and sign only
+#   BUILD       release (default): Swift -O whole-module, C -Os, NS assertions off, like App
+#               Store Firefox; debug: Fennec's own -Onone build. Both keep the Fennec developer
+#               channel and its DEBUG condition (clearing it from the command line would also
+#               clear SWIFT_PACKAGE in package targets). Gecko's libxul is -O3 either way.
 
 set -euo pipefail
 
@@ -35,6 +39,17 @@ fi
 [[ -n ${PROFILE:-} ]] || { echo "no profile for $BUNDLE_ID: build DeviceProfile/ once (see its project.yml)"; exit 1; }
 FLAGS=(-skipMacroValidation -skipPackagePluginValidation -quiet)
 NOSIGN=(CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=)
+BUILD=${BUILD:-release}
+case $BUILD in
+    release)
+        DERIVED=build/release
+        OPT=(SWIFT_OPTIMIZATION_LEVEL=-O SWIFT_COMPILATION_MODE=wholemodule GCC_OPTIMIZATION_LEVEL=s
+            ENABLE_NS_ASSERTIONS=NO ENABLE_TESTABILITY=NO
+            DEBUG_INFORMATION_FORMAT=dwarf-with-dsym)
+        ;;
+    debug) DERIVED=build; OPT=();;
+    *) echo "BUILD must be release or debug"; exit 1;;
+esac
 
 case $BUNDLE_ID in
     org.mozilla.ios.Firefox*|org.mozilla.ios.FirefoxBeta*) echo "refusing stock bundle ID $BUNDLE_ID"; exit 1;;
@@ -57,15 +72,17 @@ fi
 
 xcodegen generate -q
 xcodebuild -project FennecGecko.xcodeproj -scheme FennecGeckoDevice -configuration Debug \
-    -destination generic/platform=iOS -derivedDataPath build "${FLAGS[@]}" EXPANDED_CODE_SIGN_IDENTITY=- build
+    -destination generic/platform=iOS -derivedDataPath $DERIVED "${FLAGS[@]}" "${OPT[@]}" \
+    EXPANDED_CODE_SIGN_IDENTITY=- build
 
 xcodebuild -project "$ROOT/firefox-ios/Client.xcodeproj" -scheme Fennec -configuration Debug \
-    -destination generic/platform=iOS -derivedDataPath build/FennecDevice "${FLAGS[@]}" "${NOSIGN[@]}" \
+    -destination generic/platform=iOS -derivedDataPath $DERIVED/FennecDevice "${FLAGS[@]}" "${NOSIGN[@]}" \
+    "${OPT[@]}" GECKO_SUPPORT_PRODUCTS="$HERE/$DERIVED/Build/Products/Debug-iphoneos" \
     GECKO_ENGINE_BUILD=YES build
 
-PRODUCTS=build/Build/Products/Debug-iphoneos
+PRODUCTS=$DERIVED/Build/Products/Debug-iphoneos
 APP=$WORK/Client.app
-rsync -a --delete build/FennecDevice/Build/Products/Debug-iphoneos/Client.app/ "$APP/"
+rsync -a --delete $DERIVED/FennecDevice/Build/Products/Debug-iphoneos/Client.app/ "$APP/"
 rm -rf "$APP/PlugIns" "$APP/Extensions" "$APP/_CodeSignature"
 rsync -a --delete "$PRODUCTS/GeckoView.framework" "$APP/Frameworks/"
 

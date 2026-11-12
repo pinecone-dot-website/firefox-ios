@@ -469,3 +469,21 @@ HTTPS pages showed "not secure". GeckoView's iOS `ProgressDelegate` dropped
 
 Eric on the phone: lock on HTTPS sites, "not secure" on http://neverssl.com, and the panel says the
 connection is secure.
+
+### M4: Release build for the speed comparison (2026-11-12)
+
+`FennecGecko/device.sh` builds optimized by default (`BUILD=release`; `BUILD=debug` is the old
+`-Onone` build). It keeps Fennec's developer configuration, so bundle ID, app group and the Gecko
+xcconfig hook don't change, and passes on the command line, so SwiftPM packages get it too:
+`SWIFT_OPTIMIZATION_LEVEL=-O SWIFT_COMPILATION_MODE=wholemodule GCC_OPTIMIZATION_LEVEL=s
+ENABLE_NS_ASSERTIONS=NO ENABLE_TESTABILITY=NO`. Output goes to `FennecGecko/build/release/`, so
+switching modes doesn't rebuild the other. Gecko's libxul was already `-O3` (`MOZ_OPTIMIZE_FLAGS`
+in `obj-ios-device`); only the Swift side was unoptimized.
+
+The `DEBUG` compile condition stays on: clearing `SWIFT_ACTIVE_COMPILATION_CONDITIONS` from the
+command line would also clear `SWIFT_PACKAGE` in package targets. It guards only a tab-count leak
+check in `Tab.swift` and a theme debug hook.
+
+First clean release build: 254 s. Build log has `-O`, no `-Onone`; `Client` is a single 65 MB
+binary instead of the 72 KB stub plus debug dylib of the `-Onone` build. Installed on Eric's
+iPhone 17 Pro over Wi-Fi. Not yet judged on the phone.
