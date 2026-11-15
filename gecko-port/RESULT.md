@@ -492,3 +492,11 @@ iPhone 17 Pro over Wi-Fi. Not yet judged on the phone.
 me!" That's the speed verdict against WebKit Firefox. No timings were taken. Memory use and tab
 restore after a relaunch on the phone are still unmeasured, and the simulator's multi-process
 mode is still broken (see the vsync entry above); none of these block the phone build.
+
+### Trial merge into the fork's main (2026-11-15)
+
+`gecko-engine` (`c172adf64`) merged into `pinecone/main`, which had 37 newer Mozilla commits, on a
+throwaway local branch. No conflicts; `Tab.swift`, `BrowserViewController.swift` and
+`TabTrayViewController.swift`, changed on both sides, merged automatically. On the merge, for the
+iPhone 18 Pro simulator: Fennec on WebKit built in 143 s, SampleBrowser on WebKit in 18 s, Fennec
+in Gecko mode (`FennecGecko/build.sh`) in 141 s. Built only, not run. The trial branch was deleted.
