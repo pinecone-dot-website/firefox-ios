@@ -78,6 +78,9 @@ Practical facts learned along the way. Keep this current; details and history li
 - **Builds:** pass `-skipMacroValidation -skipPackagePluginValidation` to `xcodebuild`. After an
   Xcode upgrade, delete `DerivedData/<Project>-*/Build` if Swift macros fail to load
   `SwiftSyntax`.
+  After merging upstream, if errors say a `MozillaRustComponents` header "has been modified since
+  the module file" (or `uniffi_*` symbols are missing), delete
+  `Build/Intermediates.noindex/SwiftExplicitPrecompiledModules` in that build's DerivedData.
 - **Screenshots and proof runs:** `gecko-port/SimDriver/` is a standalone XCUITest project that
   opens a URL in any app (through a URL scheme with `DRIVER_URL`, or by typing into the first
   text field with `DRIVER_TYPE`), taps iOS's "Open in …?" prompt, and saves a PNG. Usage is in
