@@ -1,0 +1,16 @@
+# Exists only so Xcode's automatic signing registers the device build's App ID and app group
+# and makes its development profile. device.sh builds it once and signs Fennec with the result.
+name: FennecGeckoProfile
+options:
+  deploymentTarget:
+    iOS: "18.4"
+targets:
+  FennecGeckoProfile:
+    type: application
+    platform: iOS
+    sources: [main.swift]
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: $(DEVICE_BUNDLE_ID)
+      GENERATE_INFOPLIST_FILE: YES
+      CODE_SIGN_STYLE: Automatic
+      CODE_SIGN_ENTITLEMENTS: Profile.entitlements

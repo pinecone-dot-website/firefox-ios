@@ -54,7 +54,7 @@ class RootViewControllerModel {
                 }
             })
         let menuButton = ToolbarElement(
-            iconName: StandardImageIdentifiers.Large.appMenu,
+            iconName: StandardImageIdentifiers.Large.moreHorizontalRound,
             isEnabled: true,
             a11yLabel: "Open Menu",
             a11yHint: nil,

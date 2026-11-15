@@ -32,6 +32,9 @@ class TabWebView: WKWebView, MenuHelperWebViewInterface, ThemeApplicable, Notifi
     private var uiTestLeakView: UIView? // Used for automation
     private var certStore: CertStore
     var notificationCenter: any NotificationProtocol
+    #if GECKO_ENGINE
+    weak var engine: TabEngine?
+    #endif
 
     deinit {
         // TODO: FXIOS-13097 This is a work around until we can leverage isolated deinits
@@ -48,6 +51,9 @@ class TabWebView: WKWebView, MenuHelperWebViewInterface, ThemeApplicable, Notifi
     }
 
     override var hasOnlySecureContent: Bool {
+        #if GECKO_ENGINE
+        if let engine { return engine.hasOnlySecureContent }
+        #endif
         // TODO: - FXIOS-11721 Understand how it should be showed the lock icon for a local PDF
         // When PDF is shown we display the online URL for a local PDF so secure content should be true
         if let url, url.isFileURL, url.lastPathComponent.hasSuffix(".pdf") {

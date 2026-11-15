@@ -1,3 +1,21 @@
+## This fork: Firefox iOS on Gecko
+
+This is `eaglstun/firefox-ios`, a personal fork of Mozilla's Firefox for iOS.
+Its one job, on branch `gecko-engine`: replace WebKit with Gecko, Firefox's own
+engine, in a dev-signed build that never ships to the App Store.
+
+**Read `gecko-port/PLAN.md` before doing anything.** It has the goal, the
+workspace layout (Gecko source and a reference project live in sibling folders),
+the milestones, and the stop-and-ask rules. Log every result in
+`gecko-port/RESULT.md`.
+PLAN.md's "Working notes" section covers the toolchain, simulator, and build setup.
+Keep both files current as you learn things.
+
+Everything below this section is upstream Mozilla's agent guidance. It still
+applies to code you write here.
+
+---
+
 ## Global instructions
 
 - When refactoring existing code, check relevant files for existing tests and update them if necessary.

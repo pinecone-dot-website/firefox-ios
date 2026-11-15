@@ -4,6 +4,9 @@
 
 import Foundation
 import WebEngine
+#if GECKO_ENGINE
+import GeckoEngine
+#endif
 
 @MainActor
 struct EngineProvider {
@@ -13,7 +16,11 @@ struct EngineProvider {
     private(set) var view: EngineView
 
     init?(dependencyManager: EngineDependencyManager) async {
+        #if GECKO_ENGINE
+        self.engine = GeckoEngine()
+        #else
         self.engine = WKEngine.factory(engineDependencies: dependencyManager.engineDependencies)
+        #endif
 
         do {
             session = try await engine.createSession(dependencies: dependencyManager.sessionDependencies)

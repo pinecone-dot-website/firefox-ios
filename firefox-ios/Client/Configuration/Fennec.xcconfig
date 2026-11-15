@@ -19,3 +19,6 @@ MOZ_INTERNAL_URL_SCHEME = fennec
 OTHER_LDFLAGS = -ObjC -fprofile-instr-generate -Xlinker -no_application_extension
 SWIFT_OPTIMIZATION_LEVEL = -Onone
 ENABLE_NS_ASSERTIONS = YES
+
+// Gecko engine port (gecko-port/FennecGecko). Inert unless GECKO_ENGINE_BUILD=YES.
+#include? "../../../gecko-port/FennecGecko/Gecko.xcconfig"

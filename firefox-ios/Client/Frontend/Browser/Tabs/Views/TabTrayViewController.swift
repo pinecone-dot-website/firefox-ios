@@ -138,6 +138,11 @@ final class TabTrayViewController: UIViewController,
                                            buttonTitles: titles)
         selector.delegate = self
         selector.accessibilityIdentifier = AccessibilityIdentifiers.TabTray.navBarSegmentedControl
+        #if GECKO_ENGINE
+        // Private browsing is hidden in Gecko builds; the experiment order puts it first.
+        selector.buttons.first?.isEnabled = false
+        selector.buttons.first?.alpha = 0.3
+        #endif
 
         didSelectSection(panelType: tabTrayState.selectedPanel)
         return selector
@@ -153,6 +158,11 @@ final class TabTrayViewController: UIViewController,
                                                buttonTitles: titles)
         selector.delegate = self
         selector.accessibilityIdentifier = AccessibilityIdentifiers.TabTray.navBarSegmentedControl
+        #if GECKO_ENGINE
+        // Private browsing is hidden in Gecko builds; the experiment order puts it first.
+        selector.buttons.first?.isEnabled = false
+        selector.buttons.first?.alpha = 0.3
+        #endif
 
         didSelectSection(panelType: tabTrayState.selectedPanel)
         return selector
@@ -861,6 +871,10 @@ final class TabTrayViewController: UIViewController,
         let segmentToFocus = TabTrayPanelType.tabs
         segmentedControl.selectedSegmentIndex = segmentToFocus.rawValue
         segmentedControl.addTarget(self, action: action, for: .valueChanged)
+        #if GECKO_ENGINE
+        // Private browsing is hidden in Gecko builds (gecko-port/M3-DESIGN.md).
+        segmentedControl.setEnabled(false, forSegmentAt: TabTrayPanelType.privateTabs.rawValue)
+        #endif
         return segmentedControl
     }
 
@@ -1134,6 +1148,9 @@ final class TabTrayViewController: UIViewController,
 
     func didSelectSection(panelType: TabTrayPanelType) {
         guard tabTrayState.selectedPanel != panelType else { return }
+        #if GECKO_ENGINE
+        guard panelType != .privateTabs else { return }
+        #endif
 
         if tabTrayUtils.shouldDisplayExperimentUI() {
             let targetIndex = TabTrayPanelType.getExperimentConvert(index: panelType.rawValue).rawValue

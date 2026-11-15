@@ -1,3 +1,69 @@
+# Firefox iOS on Gecko
+
+This fork swaps WebKit for **Gecko**, Firefox's own engine, inside the real Firefox for iOS app.
+It's a personal, dev-signed build that runs on our own devices. It never goes to the App Store,
+and nothing here is meant to be sent back upstream.
+
+All of the work is on the `gecko-engine` branch. Gecko needs a few patches of its own, and those
+live in [pinecone-dot-website/firefox](https://github.com/pinecone-dot-website/firefox) on the
+`ios-gecko-engine` branch.
+
+<img src="gecko-port/m3-fennec-2-engine.png" width="280" alt="Fennec's own address bar and UI, with a test page reporting GECKO as the engine">
+
+## Where it stands
+
+- **Simulator:** Fennec browses on Gecko, with the URL bar, back and forward, and tabs.
+  A test page confirms the engine is Gecko (`CSS.supports("-moz-appearance", "none")` is true),
+  and stock WebKit Fennec fails the same check.
+- **iPhone:** runs from a dev-signed build. There are no BrowserEngineKit entitlements, so Gecko
+  runs in a single process and all JavaScript is interpreted (no JIT). Scrolling uses hardware
+  vsync at ProMotion rates, and HTTPS pages show the lock.
+- **Stubbed or untested:** tab thumbnails, content blocking, add-ons, Sync, and session
+  restore after a relaunch.
+
+The full log, with screenshots for each milestone, is in
+[`gecko-port/RESULT.md`](gecko-port/RESULT.md). The plan and build notes are in
+[`gecko-port/PLAN.md`](gecko-port/PLAN.md).
+
+## How it's put together
+
+- `BrowserKit/Sources/GeckoEngine/` implements Firefox iOS's own `WebEngine` protocols
+  (`Engine`, `EngineSession`, `EngineView`) on top of GeckoView.
+- `firefox-ios/Client/Gecko/` holds the glue that puts that engine inside Fennec.
+- Gecko is opt-in. The engine is chosen at compile time with `GECKO_ENGINE_BUILD=YES`, and a
+  normal Fennec build stays on WebKit.
+
+## Building
+
+You need Xcode 27.2 and a Gecko checkout from the fork above, built on `ios-gecko-engine`.
+
+```sh
+# Gecko, for the simulator (about 15 min clean)
+cd mozilla-firefox
+MOZCONFIG=../firefox-ios/gecko-port/mozconfig-ios-sim ./mach build
+
+# Fennec on Gecko, for the simulator
+firefox-ios/gecko-port/FennecGecko/build.sh [simulator-udid]
+
+# Or for an iPhone: build Gecko with mozconfig-ios-device, then
+firefox-ios/gecko-port/FennecGecko/device.sh
+```
+
+`device.sh` defaults to one particular phone and bundle ID. Set `DEVICE`, `BUNDLE_ID` and
+`PROFILE` for your own, as listed at the top of the script. It refuses stock Firefox bundle
+IDs, so it can't install over real Firefox. Fennec also needs an app group in its
+provisioning profile; PLAN.md's working notes explain how to set one up.
+
+## License
+
+Same as upstream: MPL-2.0. The [Reynard](https://github.com/minh-ton/reynard-browser)
+browser, which ships Gecko on iOS, was read as a reference, but none of its GPL-3.0 code is
+copied here.
+
+---
+
+*Upstream's README follows.*
+
 # Firefox for iOS and Focus iOS
 
 Download [Firefox iOS](https://apps.apple.com/app/firefox-web-browser/id989804926) and [Focus iOS](https://itunes.apple.com/app/id1055677337) on the App Store.

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Engine check</title>
+<style>
+  body { font: 18px -apple-system, system-ui, sans-serif; margin: 24px; }
+  #verdict { font-size: 44px; font-weight: 800; margin: 12px 0 20px; }
+  .gecko { color: #0a7a2f; } .other { color: #b3261e; }
+  code { display: block; word-break: break-all; background: #f2f2f2; padding: 10px; border-radius: 8px; }
+  a.big { display: block; margin-top: 28px; padding: 22px; font-size: 26px; text-align: center;
+          background: #3b5bdb; color: white; border-radius: 14px; text-decoration: none; }
+</style>
+</head>
+<body>
+<div>Rendering engine:</div>
+<div id="verdict">checking…</div>
+<div><b>CSS.supports("-moz-appearance", "none")</b>: <span id="moz"></span></div>
+<p><b>navigator.userAgent</b></p>
+<code id="ua"></code>
+<a class="big" href="second.html">Follow this link →</a>
+<script>
+  const moz = CSS.supports("-moz-appearance", "none");
+  const ua = navigator.userAgent;
+  const gecko = moz && /Gecko\/\d|rv:\d+/.test(ua);
+  document.getElementById("moz").textContent = String(moz);
+  document.getElementById("ua").textContent = ua;
+  const v = document.getElementById("verdict");
+  v.textContent = gecko ? "GECKO" : (moz ? "Gecko CSS, unexpected UA" : "NOT GECKO (WebKit?)");
+  v.className = gecko ? "gecko" : "other";
+</script>
+</body>
+</html>
