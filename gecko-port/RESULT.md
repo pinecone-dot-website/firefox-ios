@@ -500,3 +500,17 @@ throwaway local branch. No conflicts; `Tab.swift`, `BrowserViewController.swift`
 `TabTrayViewController.swift`, changed on both sides, merged automatically. On the merge, for the
 iPhone 18 Pro simulator: Fennec on WebKit built in 143 s, SampleBrowser on WebKit in 18 s, Fennec
 in Gecko mode (`FennecGecko/build.sh`) in 141 s. Built only, not run. The trial branch was deleted.
+
+### Upstream sync (2026-11-15)
+
+PR #1 on `pinecone-dot-website/firefox-ios` was squash-merged into the fork's `main` (`48af84a40`),
+so `gecko-engine`'s commits aren't ancestors of `main`; the content is the same. Branch
+`sync/upstream-2026-11-15` starts from that `main` and merges Mozilla's `upstream/main` (27 commits,
+356 files, including BrowserKit and MozillaRustComponents package bumps). No conflicts; the
+pbxproj merged automatically.
+
+Builds on the iPhone 18 Pro simulator: SampleBrowser on WebKit, 16 s. Both Fennecs first failed:
+the Rust components' headers changed under a cached precompiled module ("has been modified since
+the module file", then missing `uniffi_merino_*wrexhamclient*` symbols). After deleting
+`SwiftExplicitPrecompiledModules` in each DerivedData: Fennec on WebKit 95 s, Fennec in Gecko mode
+107 s. Built only, not run.
